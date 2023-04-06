@@ -1,0 +1,1 @@
+This is to make the transition from major sites easier to open source option. There might be cases that you get links from different sites and want to open it from more open solution. Chaning it other way around works also if you want to use normal link as well. My goal is to add much sites as possible but help is always nice :D 
