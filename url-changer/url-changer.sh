@@ -3,8 +3,8 @@
 # Prompt the user for a URL
 read -p "Enter a URL: " url
 
-# Extract the domain from the URL
-domain=$(echo "$url" | awk -F/ '{print $3}')
+# Extract the domain from the URL and remove "www." if present (for youtube.com)
+domain=$(echo "$url" | awk -F/ '{print $3}' | sed 's/^www\.//')
 
 # Check if the domain is twitter.com
 if [ "$domain" = "twitter.com" ]; then
@@ -14,7 +14,7 @@ if [ "$domain" = "twitter.com" ]; then
 # Check if the domain is youtube.com
 elif [ "$domain" = "youtube.com" ]; then
     # Replace youtube.com with piped.mha.fi and print the modified URL
-    modified_url=$(echo "$url" | sed 's|youtube.com|piped.mha.fi|')
+    modified_url=$(echo "$url" | sed 's|youtube.com|piped.mha.fi|' | sed 's|^https://www.|https://|')
     echo "Modified URL: $modified_url"
 # Check if the domain is nitter.net
 elif [ "$domain" = "nitter.net" ]; then
