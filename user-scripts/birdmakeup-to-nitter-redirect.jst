@@ -1,0 +1,26 @@
+// ==UserScript==
+// @name         Bird.Makeup to Nitter redirector
+// @namespace    http://tampermonkey
+// @version      1
+// @description  Redirects links from bird.makeup to nitter
+// @match        https://bird.makeup/*
+// @author       shadowtux
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    // Check if the URL matches the expected pattern
+    if (location.href.match(/https:\/\/bird\.makeup\/users\/(\w+)\/statuses\/(\d+)/)) {
+
+        // Extract the username and status ID from the URL
+        const [, username, statusId] = location.href.match(/https:\/\/bird\.makeup\/users\/(\w+)\/statuses\/(\d+)/);
+
+        // Build the new URL using the extracted values
+        const newUrl = `https://nitter.net/${username}/status/${statusId}`;
+
+        // Redirect the page to the new URL
+        location.replace(newUrl);
+    }
+})();
