@@ -66,6 +66,10 @@ THE SOFTWARE.
             '!youai': {
                 url: 'https://you.com/search?q=',
                 params: '&fromSearchBar=true&tbm=youchat&chatMode=default'
+            },
+            '!phind': {
+                url: 'https://www.phind.com/search?q=',
+                params: '&searchMode=auto&allowMultiSearch=true'
             }
         };
 
