@@ -65,11 +65,14 @@ THE SOFTWARE.
             },
             '!youai': {
                 url: 'https://you.com/search?q=',
-                params: '&fromSearchBar=true&tbm=youchat&chatMode=default'
+                params: '&fromSearchBar=true&tbm=youchat&chatMode=custom'
             },
             '!phind': {
                 url: 'https://www.phind.com/search?q=',
                 params: '&searchMode=auto&allowMultiSearch=true'
+            },
+            '!felo': {
+                url: 'https://felo.ai/search?q='
             }
         };
 
