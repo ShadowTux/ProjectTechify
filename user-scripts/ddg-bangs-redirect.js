@@ -6,6 +6,7 @@
 // @match        *://duckduckgo.com/*
 // @grant        none
 // @run-at       document-start
+// @license MIT
 // ==/UserScript==
 
 /*
