@@ -46,13 +46,27 @@ THE SOFTWARE.
     // Extract the search query
     var query = getUrlParameter('q');
     if (query) {
-        // Define bang patterns and their corresponding URLs
+        // Define bang patterns with corresponding URLs and additional parameters
         var bangs = {
-            '!chatgpt': 'https://chatgpt.com/?q=',
-            '!chat': 'https://chatgpt.com/?q=',
-            '!summary': 'https://search.brave.com/search?q=',
-            '!perp': 'https://www.perplexity.ai/search?q=',
-            '!youai': 'https://you.com/search?q='
+            '!chatgpt': {
+                url: 'https://chatgpt.com/?q=',
+                suffix: ' use web search'
+            },
+            '!chat': {
+                url: 'https://chatgpt.com/?q=',
+                suffix: ' use web search'
+            },
+            '!summary': {
+                url: 'https://search.brave.com/search?q=',
+                params: '&source=llmSuggest&summary=1'
+            },
+            '!perp': {
+                url: 'https://www.perplexity.ai/search?q='
+            },
+            '!youai': {
+                url: 'https://you.com/search?q=',
+                params: '&fromSearchBar=true&tbm=youchat&chatMode=custom'
+            }
         };
 
         // Iterate over the defined bangs
@@ -60,19 +74,15 @@ THE SOFTWARE.
             if (query.includes(bang)) {
                 // Remove the bang from the query
                 var newQuery = query.replace(bang, '').trim();
-                // Append 'use web search' to the query for ChatGPT bangs
-                if (bang === '!chatgpt' || bang === '!chat') {
-                    newQuery += ' use web search';
+                // Append suffix if defined
+                if (bangs[bang].suffix) {
+                    newQuery += bangs[bang].suffix;
                 }
                 // Construct the redirect URL
-                var redirectUrl = bangs[bang] + encodeURIComponent(newQuery);
-                // Add specific parameters for Brave Search summary
-                if (bang === '!summary') {
-                    redirectUrl += '&source=llmSuggest&summary=1';
-                }
-                // Add specific parameters for You.com AI chat
-                if (bang === '!youai') {
-                    redirectUrl += '&fromSearchBar=true&tbm=youchat&chatMode=custom';
+                var redirectUrl = bangs[bang].url + encodeURIComponent(newQuery);
+                // Append additional parameters if defined
+                if (bangs[bang].params) {
+                    redirectUrl += bangs[bang].params;
                 }
                 // Redirect to the constructed URL
                 window.location.replace(redirectUrl);
