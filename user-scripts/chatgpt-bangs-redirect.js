@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         DuckDuckGo !chatgpt and !chat Bang Redirect with Web Search
+// @name         DuckDuckGo Custom Bang Redirects
 // @namespace    http://your.namespace.here
-// @version      1.2
-// @description  Redirects DuckDuckGo searches with !chatgpt or !chat bangs to ChatGPT, appending 'use web search' to each query
+// @version      1.3
+// @description  Redirects DuckDuckGo searches with custom bangs to specified services
 // @match        *://duckduckgo.com/*
 // @grant        none
 // @run-at       document-start
@@ -46,25 +46,33 @@ THE SOFTWARE.
     // Extract the search query
     var query = getUrlParameter('q');
     if (query) {
-        // Check if the query contains '!chatgpt' or '!chat'
-        if (query.includes('!chatgpt') || query.includes('!chat')) {
-            // Remove the bang from the query
-            var newQuery = query.replace('!chatgpt', '').replace('!chat', '').trim();
-            // Append 'use web search' to the query
-            newQuery += ' use web search';
-            // Construct the ChatGPT URL
-            var chatgptUrl = 'https://chatgpt.com/?q=' + encodeURIComponent(newQuery) + '&hints=search';
-            // Redirect to ChatGPT
-            window.location.replace(chatgptUrl);
-        }
-        // Check if the query contains '!summary'
-        else if (query.includes('!summary')) {
-            // Remove the bang from the query
-            var newQuery = query.replace('!summary', '').trim();
-            // Construct the Brave Search URL
-            var braveSearchUrl = 'https://search.brave.com/search?q=' + encodeURIComponent(newQuery) + '&source=llmSuggest&summary=1';
-            // Redirect to Brave Search
-            window.location.replace(braveSearchUrl);
+        // Define bang patterns and their corresponding URLs
+        var bangs = {
+            '!chatgpt': 'https://chatgpt.com/?q=',
+            '!chat': 'https://chatgpt.com/?q=',
+            '!summary': 'https://search.brave.com/search?q=',
+            '!perp': 'https://www.perplexity.ai/search?q='
+        };
+
+        // Iterate over the defined bangs
+        for (var bang in bangs) {
+            if (query.includes(bang)) {
+                // Remove the bang from the query
+                var newQuery = query.replace(bang, '').trim();
+                // Append 'use web search' to the query for ChatGPT bangs
+                if (bang === '!chatgpt' || bang === '!chat') {
+                    newQuery += ' use web search';
+                }
+                // Construct the redirect URL
+                var redirectUrl = bangs[bang] + encodeURIComponent(newQuery);
+                // Add specific parameters for Brave Search summary
+                if (bang === '!summary') {
+                    redirectUrl += '&source=llmSuggest&summary=1';
+                }
+                // Redirect to the constructed URL
+                window.location.replace(redirectUrl);
+                break;
+            }
         }
     }
 })();
