@@ -57,5 +57,14 @@ THE SOFTWARE.
             // Redirect to ChatGPT
             window.location.replace(chatgptUrl);
         }
+        // Check if the query contains '!summary'
+        else if (query.includes('!summary')) {
+            // Remove the bang from the query
+            var newQuery = query.replace('!summary', '').trim();
+            // Construct the Brave Search URL
+            var braveSearchUrl = 'https://search.brave.com/search?q=' + encodeURIComponent(newQuery) + '&source=llmSuggest&summary=1';
+            // Redirect to Brave Search
+            window.location.replace(braveSearchUrl);
+        }
     }
 })();
