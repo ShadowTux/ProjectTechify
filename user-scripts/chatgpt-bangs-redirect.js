@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DuckDuckGo Custom Bang Redirects
 // @namespace    http://your.namespace.here
-// @version      1.3
+// @version      1.4
 // @description  Redirects DuckDuckGo searches with custom bangs to specified services
 // @match        *://duckduckgo.com/*
 // @grant        none
@@ -51,7 +51,8 @@ THE SOFTWARE.
             '!chatgpt': 'https://chatgpt.com/?q=',
             '!chat': 'https://chatgpt.com/?q=',
             '!summary': 'https://search.brave.com/search?q=',
-            '!perp': 'https://www.perplexity.ai/search?q='
+            '!perp': 'https://www.perplexity.ai/search?q=',
+            '!youai': 'https://you.com/search?q='
         };
 
         // Iterate over the defined bangs
@@ -68,6 +69,10 @@ THE SOFTWARE.
                 // Add specific parameters for Brave Search summary
                 if (bang === '!summary') {
                     redirectUrl += '&source=llmSuggest&summary=1';
+                }
+                // Add specific parameters for You.com AI chat
+                if (bang === '!youai') {
+                    redirectUrl += '&fromSearchBar=true&tbm=youchat&chatMode=custom';
                 }
                 // Redirect to the constructed URL
                 window.location.replace(redirectUrl);
