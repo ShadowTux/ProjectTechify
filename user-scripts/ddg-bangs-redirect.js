@@ -74,6 +74,9 @@ THE SOFTWARE.
             },
             '!felo': {
                 url: 'https://felo.ai/search?q='
+            },
+            '!ecoai': {
+                url: 'https://www.ecosia.org/chat?q='
             }
         };
 
