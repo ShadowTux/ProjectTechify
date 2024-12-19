@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DuckDuckGo Custom Bang Redirects
 // @namespace    http://your.namespace.here
-// @version      1.4
+// @version      1.5
 // @description  Redirects DuckDuckGo searches with custom bangs to specified services
 // @match        *://duckduckgo.com/*
 // @grant        none
