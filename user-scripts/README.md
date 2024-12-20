@@ -2,7 +2,7 @@ For use of tamper monkey or similar program.
 
 Also from twitter-to-nitter script https://raw.githubusercontent.com/shmup/redirect-userscripts/main/twitter-nitter.js
 
-ddg-bangs-redirect.js:
+custom-ai-bangs-redirect.js:
 The **Custom AI !Bang Redirects** userscript enhances your search experience by introducing custom bang commands that redirect searches to specific AI-powered services across multiple search engines, including Google, Bing, Startpage, Brave, Ecosia, and DuckDuckGo.
 
 **Features**
@@ -21,6 +21,7 @@ The **Custom AI !Bang Redirects** userscript enhances your search experience by 
 1. **Install a Userscript Manager:**
    - [Tampermonkey](https://www.tampermonkey.net/) for Chrome, Firefox, Safari, and Edge.
    - [Greasemonkey](https://www.greasespot.net/) for Firefox.
+   - [Violentmonkey](https://violentmonkey.github.io/) for Chrome, Firefox, and Edge.
 
 2. **Add the Userscript:**
    - Create a new userscript in your manager.
