@@ -1,9 +1,14 @@
 // ==UserScript==
-// @name         DuckDuckGo Custom Bang Redirects
+// @name         Custom AI !Bang Redirects
 // @namespace    http://your.namespace.here
 // @version      1.5
 // @description  Redirects DuckDuckGo searches with custom bangs to specified services
-// @match        *://duckduckgo.com/*
+// @match        *://*.google.com/*
+// @match        *://*.bing.com/*
+// @match        *://startpage.com/*
+// @match        *://*.brave.com/*
+// @match        *://*.ecosia.org/*
+// @match        *://*.duckduckgo.com/*
 // @grant        none
 // @run-at       document-start
 // @license MIT
