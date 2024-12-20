@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Custom AI !Bang Redirects
 // @namespace    http://your.namespace.here
-// @version      1.5
+// @version      1.6
 // @description  Redirects DuckDuckGo searches with custom bangs to specified services
 // @match        *://*.google.com/*
 // @match        *://*.bing.com/*
