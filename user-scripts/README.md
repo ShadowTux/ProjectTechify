@@ -2,7 +2,8 @@ For use of tamper monkey or similar program.
 
 Also from twitter-to-nitter script https://raw.githubusercontent.com/shmup/redirect-userscripts/main/twitter-nitter.js
 
-custom-ai-bangs-redirect.js:
+**Custom AI !Bang Redirects**
+
 The **Custom AI !Bang Redirects** userscript enhances your search experience by introducing custom bang commands that redirect searches to specific AI-powered services across multiple search engines, including Google, Bing, Startpage, Brave, Ecosia, and DuckDuckGo.
 
 **Features**
@@ -15,6 +16,7 @@ The **Custom AI !Bang Redirects** userscript enhances your search experience by 
   - `!phind`: Redirects to Phind.com, optimized for technical searches with multi-search enabled.
   - `!felo`: Redirects to Felo.ai with the given query.
   - `!ecoai`: Redirects to Ecosia's AI chat with the given query.
+  - `!mistral` or `!mis`: Redirects to Mistral AI's chat with the given query.
 
 **Installation**
 
@@ -40,6 +42,8 @@ In the search bar of any supported search engine, use the following custom bangs
 - `!phind your query`
 - `!felo your query`
 - `!ecoai your query`
+- `!mistral your query`
+- `!mis your query`
 
 Replace `your query` with your actual search terms. The script automatically redirects to the appropriate service based on the bang.
 
@@ -47,4 +51,12 @@ Replace `your query` with your actual search terms. The script automatically red
 
 This project is licensed under the MIT License. Feel free to modify and share!
 
-**Note:** DuckDuckGo's bangs are shortcuts that quickly take you to search results on other sites.  
+**Note:** DuckDuckGo's bangs are shortcuts that quickly take you to search results on other sites.
+
+---
+
+### Key Updates:
+- **Added `!mistral` and `!mis`**: These bangs now redirect to Mistral AI's chat service.
+- **Updated Documentation**: Reflected the addition of the new bangs in the features and usage sections.
+
+This documentation should help users understand how to install and use the userscript effectively.
