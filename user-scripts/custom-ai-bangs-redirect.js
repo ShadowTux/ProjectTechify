@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Custom AI !Bang Redirects
 // @namespace    http://your.namespace.here
-// @version      1.6
+// @version      1.9
 // @description  Redirects DuckDuckGo searches with custom bangs to specified services
 // @match        *://*.google.com/*
 // @match        *://*.bing.com/*
@@ -82,6 +82,14 @@ THE SOFTWARE.
             },
             '!ecoai': {
                 url: 'https://www.ecosia.org/chat?q='
+            },
+            '!mistral': {
+                url: 'https://chat.mistral.ai/chat?q=',
+                params: '&mode=ai'
+            },
+            '!mis': {
+                url: 'https://chat.mistral.ai/chat?q=',
+                params: '&mode=ai'
             }
         };
 
