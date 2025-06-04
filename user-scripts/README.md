@@ -60,3 +60,60 @@ This project is licensed under the MIT License. Feel free to modify and share!
 - **Updated Documentation**: Reflected the addition of the new bangs in the features and usage sections.
 
 This documentation should help users understand how to install and use the userscript effectively.
+
+---
+
+# Enhanced Search !Bang Redirects
+
+The Enhanced Search !Bang Redirects userscript improves your search experience by introducing custom bang commands that redirect searches to various AI services, search engines, and content platforms across multiple search engines, including Google, Bing, Startpage, Brave, Ecosia, and DuckDuckGo.
+
+## Features
+
+### AI Service Bangs:
+- `!chatgpt` or `!chat`: Redirects to ChatGPT with the query (with "use web search" appended for `!chat`)
+- `!summary`: Redirects to Brave Search with summary feature enabled
+- `!perp`: Redirects to Perplexity.ai with the given query
+- `!youai`: Redirects to You.com's AI chat with the specified query
+- `!phind`: Redirects to Phind.com, optimized for technical searches
+- `!felo`: Redirects to Felo.ai with the given query
+- `!ecoai`: Redirects to Ecosia's AI chat with the given query
+- `!mistral` or `!mis`: Redirects to Mistral AI's chat with the given query
+
+### Search Engine & Content Bangs:
+- `!g`: Redirects to Google Search
+- `!s` or `!sp`: Redirects to Startpage
+- `!yt`: Redirects to YouTube search results
+- `!w`: Redirects to Wikipedia search
+- `!nixpkgs`: Redirects to NixOS packages search
+- `!ddg`: Redirects to DuckDuckGo search
+
+## Installation
+
+1. Install a Userscript Manager:
+   - Tampermonkey for Chrome, Firefox, Safari, and Edge
+   - Greasemonkey for Firefox
+   - Violentmonkey for Chrome, Firefox, and Edge
+
+2. Add the Userscript:
+   - Create a new userscript in your manager
+   - Copy and paste the script code into the editor
+   - Save and enable the script
+
+## Usage
+
+In the search bar of any supported search engine, use the bang commands followed by your search terms:
+
+```
+!chatgpt how to install Linux
+!yt learn JavaScript tutorial
+!w artificial intelligence
+!g weather forecast
+```
+
+The script automatically redirects to the appropriate service based on the bang used.
+
+## License
+
+This project is licensed under the MIT License. Feel free to modify and share!
+
+Note: This script enhances your search experience by providing custom bangs similar to DuckDuckGo's bang system, but it works across multiple search engines.
