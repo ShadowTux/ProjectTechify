@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Enhanced Search !Bang Redirects
 // @namespace    http://your.namespace.here
-// @version      1.0
+// @version      1.1
 // @description  Redirects searches with custom bangs to various services including Google, YouTube, Wikipedia, and more
 // @match        *://*.google.com/*
 // @match        *://*.bing.com/*
