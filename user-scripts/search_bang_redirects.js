@@ -77,8 +77,8 @@ THE SOFTWARE.
                 url: 'https://chatgpt.com/?q='
             },
             '!chat': {
-                url: 'https://chatgpt.com/?q=',
-                suffix: ' use web search'
+                url: 'https://chatgpt.com/?q='
+                // Removed the suffix: ' use web search'
             },
             '!summary': {
                 url: 'https://search.brave.com/search?q=',
