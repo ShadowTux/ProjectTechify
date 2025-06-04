@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Enhanced Search !Bang Redirects
 // @namespace    http://your.namespace.here
-// @version      1.2
+// @version      1.3
 // @description  Redirects searches with custom bangs to various services including Google, YouTube, Wikipedia, and more
 // @match        *://*.google.com/*
 // @match        *://*.bing.com/*
@@ -9,7 +9,8 @@
 // @match        *://*.brave.com/*
 // @match        *://*.ecosia.org/*
 // @match        *://*.duckduckgo.com/*
-// @match        *://*.qwant.com/*
+// @match        *://*.qwant.com/* 
+// @match        *://*.mullvad.net/* 
 // @grant        none
 // @run-at       document-start
 // @license MIT
@@ -47,7 +48,7 @@ THE SOFTWARE.
     if (window.location.href.includes(redirectFlag)) {
         return; // Exit if we detect our redirect flag
     }
-
+    
     // Function to extract URL parameters
     function getUrlParameter(name) {
         name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
@@ -56,25 +57,30 @@ THE SOFTWARE.
         return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
     }
 
-    // Detect if we're on Ecosia and in shopping mode
+    // Detect search engine hostnames
     const isEcosia = window.location.hostname.includes('ecosia.org');
     const isShoppingSearch = window.location.pathname.includes('/shopping');
-
+    const isMullvad = window.location.hostname.includes('mullvad.net');
+    
     // Extract the search query from various search engines
     var query = getUrlParameter('q') || getUrlParameter('query') || getUrlParameter('search_query');
-
+    
     // Special case for Qwant which uses a different parameter
     if (!query && window.location.hostname.includes('qwant.com')) {
-        query = getUrlParameter('q');  // Changed from 't' to 'q' based on user's example
+        query = getUrlParameter('q');
     }
-
+    
+    // Debug logging (can be removed in production)
+    console.log("Enhanced Search !Bang Redirects - Query detected:", query);
+    console.log("Current URL:", window.location.href);
+    
     // Special case for Ecosia shopping search that might have been triggered by !s
     if (isEcosia && isShoppingSearch && query) {
         // Redirect directly to Startpage
         window.location.replace('https://www.startpage.com/sp/search?query=' + encodeURIComponent(query) + '&' + redirectFlag + '=1');
         return;
     }
-
+    
     if (query) {
         // Define bang patterns with corresponding URLs and additional parameters
         var bangs = {
@@ -114,7 +120,7 @@ THE SOFTWARE.
                 url: 'https://chat.mistral.ai/chat?q=',
                 params: '&mode=ai'
             },
-
+            
             // New bangs requested by user
             '!g': {
                 url: 'https://www.google.com/search?q='
@@ -140,7 +146,7 @@ THE SOFTWARE.
             '!ddg': {
                 url: 'https://duckduckgo.com/?q='
             },
-            // Updated Qwant bangs to use the correct URL format
+            // Qwant bangs 
             '!qw': {
                 url: 'https://www.qwant.com/?q=',
                 params: '&t=web'
@@ -148,6 +154,11 @@ THE SOFTWARE.
             '!qwant': {
                 url: 'https://www.qwant.com/?q=',
                 params: '&t=web'
+            },
+            // Mullvad Leta bang
+            '!leta': {
+                url: 'https://leta.mullvad.net/search?q=',
+                params: '&engine=brave'
             }
         };
 
@@ -159,7 +170,7 @@ THE SOFTWARE.
                 window.location.replace('https://search.brave.com/search?q=' + encodeURIComponent(newQuery) + '&source=llmSuggest&summary=1&' + redirectFlag + '=1');
                 return;
             }
-
+            
             // Only proceed with !s redirection if it's not part of another bang
             var matchesOtherBang = false;
             for (var otherBang in bangs) {
@@ -167,14 +178,14 @@ THE SOFTWARE.
                 if (otherBang === '!s' || otherBang === '!s ' || otherBang === '!sp') {
                     continue;
                 }
-
+                
                 // Check if query contains another bang
                 if (otherBang.startsWith('!s') && query.includes(otherBang)) {
                     matchesOtherBang = true;
                     break;
                 }
             }
-
+            
             // If no other bang matched, treat as !s
             if (!matchesOtherBang) {
                 var newQuery = query.replace('!s', '').trim();
@@ -187,38 +198,52 @@ THE SOFTWARE.
         var bangsList = Object.keys(bangs).sort(function(a, b) {
             return b.length - a.length;
         });
-
+        
+        var hasBang = false;
+        var matchedBang = '';
+        
+        // First check if any bang exists in the query
         for (var i = 0; i < bangsList.length; i++) {
             var bang = bangsList[i];
             if (query.includes(bang)) {
-                // Remove the bang from the query
-                var newQuery = query.replace(bang, '').trim();
-
-                // Add prefix if defined (before the query)
-                if (bangs[bang].prefix) {
-                    newQuery = bangs[bang].prefix + newQuery;
-                }
-
-                // Append suffix if defined (after the query)
-                if (bangs[bang].suffix) {
-                    newQuery += bangs[bang].suffix;
-                }
-
-                // Construct the redirect URL
-                var redirectUrl = bangs[bang].url + encodeURIComponent(newQuery);
-
-                // Append additional parameters if defined
-                if (bangs[bang].params) {
-                    redirectUrl += bangs[bang].params;
-                }
-
-                // Add our redirect flag to prevent loops
-                redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + redirectFlag + '=1';
-
-                // Redirect to the constructed URL
-                window.location.replace(redirectUrl);
+                hasBang = true;
+                matchedBang = bang;
                 break;
             }
+        }
+        
+        // If a bang was found, process it
+        if (hasBang) {
+            console.log("Bang detected:", matchedBang);
+            
+            // Remove the bang from the query
+            var newQuery = query.replace(matchedBang, '').trim();
+            
+            // Add prefix if defined (before the query)
+            if (bangs[matchedBang].prefix) {
+                newQuery = bangs[matchedBang].prefix + newQuery;
+            }
+            
+            // Append suffix if defined (after the query)
+            if (bangs[matchedBang].suffix) {
+                newQuery += bangs[matchedBang].suffix;
+            }
+            
+            // Construct the redirect URL
+            var redirectUrl = bangs[matchedBang].url + encodeURIComponent(newQuery);
+            
+            // Append additional parameters if defined
+            if (bangs[matchedBang].params) {
+                redirectUrl += bangs[matchedBang].params;
+            }
+            
+            // Add our redirect flag to prevent loops
+            redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + redirectFlag + '=1';
+            
+            console.log("Redirecting to:", redirectUrl);
+            
+            // Redirect to the constructed URL
+            window.location.replace(redirectUrl);
         }
     }
 })();
