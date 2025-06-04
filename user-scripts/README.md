@@ -65,12 +65,12 @@ This documentation should help users understand how to install and use the users
 
 # Enhanced Search !Bang Redirects
 
-The Enhanced Search !Bang Redirects userscript improves your search experience by introducing custom bang commands that redirect searches to various AI services, search engines, and content platforms across multiple search engines, including Google, Bing, Startpage, Brave, Ecosia, and DuckDuckGo.
+The Enhanced Search !Bang Redirects userscript improves your search experience by introducing custom bang commands that redirect searches to various AI services, search engines, and content platforms across multiple search engines, including Google, Bing, Startpage, Brave, Ecosia, DuckDuckGo, Qwant, and Mullvad Leta.
 
 ## Features
 
 ### AI Service Bangs:
-- `!chatgpt` or `!chat`: Redirects to ChatGPT with the query (with "use web search" appended for `!chat`)
+- `!chatgpt` or `!chat`: Redirects to ChatGPT with the query
 - `!summary`: Redirects to Brave Search with summary feature enabled
 - `!perp`: Redirects to Perplexity.ai with the given query
 - `!youai`: Redirects to You.com's AI chat with the specified query
@@ -86,6 +86,20 @@ The Enhanced Search !Bang Redirects userscript improves your search experience b
 - `!w`: Redirects to Wikipedia search
 - `!nixpkgs`: Redirects to NixOS packages search
 - `!ddg`: Redirects to DuckDuckGo search
+- `!qw` or `!qwant`: Redirects to Qwant web search
+- `!leta`: Redirects to Mullvad Leta search (with Brave as the search engine)
+
+## Supported Search Engines
+
+The script works on the following search engine domains:
+- Google (`google.com`)
+- Bing (`bing.com`)
+- Startpage (`startpage.com`)
+- Brave Search (`brave.com`)
+- Ecosia (`ecosia.org`)
+- DuckDuckGo (`duckduckgo.com`)
+- Qwant (`qwant.com`)
+- Mullvad Leta (`mullvad.net`)
 
 ## Installation
 
@@ -108,9 +122,19 @@ In the search bar of any supported search engine, use the bang commands followed
 !yt learn JavaScript tutorial
 !w artificial intelligence
 !g weather forecast
+!qwant privacy tools
+!leta secure vpn
 ```
 
 The script automatically redirects to the appropriate service based on the bang used.
+
+## Technical Notes
+
+- The script prevents redirection loops by adding a flag to URLs
+- Bangs are processed in order of length (longest first) to avoid conflicts
+- Special handling is implemented for Ecosia to properly differentiate between similar bangs (like `!s` vs `!summary`)
+- Qwant searches use the `q` parameter with `t=web` for proper redirects
+- Mullvad Leta searches use the `q` parameter with `engine=brave` to specify the search engine
 
 ## License
 
