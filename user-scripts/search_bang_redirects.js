@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Enhanced Search !Bang Redirects
 // @namespace    http://your.namespace.here
-// @version      1.3
+// @version      1.4
 // @description  Redirects searches with custom bangs to various services including Google, YouTube, Wikipedia, and more
 // @match        *://*.google.com/*
 // @match        *://*.bing.com/*
@@ -11,6 +11,7 @@
 // @match        *://*.duckduckgo.com/*
 // @match        *://*.qwant.com/* 
 // @match        *://*.mullvad.net/* 
+// @match        *://*.mojeek.com/* 
 // @grant        none
 // @run-at       document-start
 // @license MIT
@@ -43,10 +44,10 @@ THE SOFTWARE.
 (function() {
     'use strict';
 
-    // Add a check to prevent redirection loops
-    const redirectFlag = 'bang_redirect';
-    if (window.location.href.includes(redirectFlag)) {
-        return; // Exit if we detect our redirect flag
+    // Add a check to prevent redirection loops - specifically not looking for bang_redirect flag
+    const wasRedirectedRecently = (new Date().getTime() - (parseInt(localStorage.getItem('lastRedirectTime') || 0)) < 2000);
+    if (wasRedirectedRecently) {
+        return; // Exit if we've redirected recently
     }
     
     // Function to extract URL parameters
@@ -57,10 +58,30 @@ THE SOFTWARE.
         return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
     }
 
+    // Helper function to perform a direct redirect without additional parameters
+    function performRedirect(url) {
+        localStorage.setItem('lastRedirectTime', new Date().getTime());
+        window.location.href = url;
+    }
+    
+    // Helper function to create a Mojeek URL
+    function createMojeekUrl(query, isSummary) {
+        const baseUrl = 'https://www.mojeek.com/search';
+        const cleanQuery = encodeURIComponent(query.trim());
+        let params = `?q=${cleanQuery}&theme=dark`;
+        
+        if (isSummary) {
+            params += '&fmt=summary';
+        }
+        
+        return baseUrl + params;
+    }
+
     // Detect search engine hostnames
     const isEcosia = window.location.hostname.includes('ecosia.org');
     const isShoppingSearch = window.location.pathname.includes('/shopping');
     const isMullvad = window.location.hostname.includes('mullvad.net');
+    const isMojeek = window.location.hostname.includes('mojeek.com');
     
     // Extract the search query from various search engines
     var query = getUrlParameter('q') || getUrlParameter('query') || getUrlParameter('search_query');
@@ -70,19 +91,40 @@ THE SOFTWARE.
         query = getUrlParameter('q');
     }
     
-    // Debug logging (can be removed in production)
-    console.log("Enhanced Search !Bang Redirects - Query detected:", query);
-    console.log("Current URL:", window.location.href);
-    
     // Special case for Ecosia shopping search that might have been triggered by !s
     if (isEcosia && isShoppingSearch && query) {
         // Redirect directly to Startpage
-        window.location.replace('https://www.startpage.com/sp/search?query=' + encodeURIComponent(query) + '&' + redirectFlag + '=1');
+        window.location.replace('https://www.startpage.com/sp/search?query=' + encodeURIComponent(query) + '&bang_redirect=1');
         return;
     }
     
     if (query) {
-        // Define bang patterns with corresponding URLs and additional parameters
+        // Special Mojeek bang handling - process these first before any other bangs
+        if (query.startsWith('!mj ')) {
+            const mojeekQuery = query.replace('!mj ', '').trim();
+            performRedirect(createMojeekUrl(mojeekQuery, false));
+            return;
+        }
+        
+        if (query.startsWith('!mojeek ')) {
+            const mojeekQuery = query.replace('!mojeek ', '').trim();
+            performRedirect(createMojeekUrl(mojeekQuery, false));
+            return;
+        }
+        
+        if (query.startsWith('!mjs ')) {
+            const mojeekQuery = query.replace('!mjs ', '').trim();
+            performRedirect(createMojeekUrl(mojeekQuery, true));
+            return;
+        }
+        
+        if (query.startsWith('!sum ')) {
+            const mojeekQuery = query.replace('!sum ', '').trim();
+            performRedirect(createMojeekUrl(mojeekQuery, true));
+            return;
+        }
+        
+        // Define bang patterns with corresponding URLs and additional parameters for all other search engines
         var bangs = {
             // Original AI service bangs
             '!chatgpt': {
@@ -121,7 +163,7 @@ THE SOFTWARE.
                 params: '&mode=ai'
             },
             
-            // New bangs requested by user
+            // Search engine bangs
             '!g': {
                 url: 'https://www.google.com/search?q='
             },
@@ -160,6 +202,7 @@ THE SOFTWARE.
                 url: 'https://leta.mullvad.net/search?q=',
                 params: '&engine=brave'
             }
+            // Mojeek bangs are now handled separately above
         };
 
         // Special handling for Ecosia - check for !s in the original query before it gets processed by Ecosia
@@ -167,7 +210,7 @@ THE SOFTWARE.
             // Check if it's !summary by looking for "!summary" specifically
             if (query.includes('!summary')) {
                 var newQuery = query.replace('!summary', '').trim();
-                window.location.replace('https://search.brave.com/search?q=' + encodeURIComponent(newQuery) + '&source=llmSuggest&summary=1&' + redirectFlag + '=1');
+                window.location.replace('https://search.brave.com/search?q=' + encodeURIComponent(newQuery) + '&source=llmSuggest&summary=1&bang_redirect=1');
                 return;
             }
             
@@ -189,7 +232,7 @@ THE SOFTWARE.
             // If no other bang matched, treat as !s
             if (!matchesOtherBang) {
                 var newQuery = query.replace('!s', '').trim();
-                window.location.replace('https://www.startpage.com/sp/search?query=' + encodeURIComponent(newQuery) + '&' + redirectFlag + '=1');
+                window.location.replace('https://www.startpage.com/sp/search?query=' + encodeURIComponent(newQuery) + '&bang_redirect=1');
                 return;
             }
         }
@@ -238,9 +281,12 @@ THE SOFTWARE.
             }
             
             // Add our redirect flag to prevent loops
-            redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + redirectFlag + '=1';
+            redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + 'bang_redirect=1';
             
             console.log("Redirecting to:", redirectUrl);
+            
+            // Record the time of this redirect to prevent loops
+            localStorage.setItem('lastRedirectTime', new Date().getTime());
             
             // Redirect to the constructed URL
             window.location.replace(redirectUrl);
