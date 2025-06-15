@@ -1,4 +1,4 @@
-# Enhanced Search !Bang Redirects
+## **Enhanced Search !Bang Redirects**
 
 The Enhanced Search !Bang Redirects userscript improves your search experience by introducing custom bang commands that redirect searches to various AI services, search engines, and content platforms across multiple search engines, including Google, Bing, Startpage, Brave, Ecosia, DuckDuckGo, Qwant, and Mullvad Leta.
 
@@ -23,6 +23,12 @@ The Enhanced Search !Bang Redirects userscript improves your search experience b
 - `!ddg`: Redirects to DuckDuckGo search
 - `!qw` or `!qwant`: Redirects to Qwant web search
 - `!leta`: Redirects to Mullvad Leta search (with Brave as the search engine)
+- `!mj` or `!mojeek`: Redirects to Mojeek search
+
+## Missing Functionality Notes:
+
+* `!mojs` or `!sum`: Redirects to Mojeek search with summary (not implemented yet, but available in Mojeek)
+* Ecosia shopping search redirects to Startpage (as Ecosia doesn't support direct bang redirects)
 
 ## Supported Search Engines
 
@@ -35,18 +41,21 @@ The script works on the following search engine domains:
 - DuckDuckGo (`duckduckgo.com`)
 - Qwant (`qwant.com`)
 - Mullvad Leta (`mullvad.net`)
+- Mojeek (`mojeek.com`)
 
 ## Installation
 
 1. Install a Userscript Manager:
-   - Tampermonkey for Chrome, Firefox, Safari, and Edge
-   - Greasemonkey for Firefox
-   - Violentmonkey for Chrome, Firefox, and Edge
-
-2. Add the Userscript:
-   - Create a new userscript in your manager
-   - Copy and paste the script code into the editor
-   - Save and enable the script
+	* [Tampermonkey for Chrome, Firefox, Safari, and Edge](https://tampermonkey.net/)
+	* [Greasemonkey for Firefox](https://www.greasespot.net/)
+	* [Violentmonkey for Chrome, Firefox, and Edge](https://violentmonkey.github.io/)
+2. Install Violentmonkey:
+	* Chrome: [Violentmonkey Chrome Extension](https://chrome.google.com/webstore/detail/violentmonkey/bpeaeghimhilgfimepgamcjbbodcjuhi)
+	* Firefox: [Violentmonkey Firefox Add-on](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)
+3. Add the Userscript:
+	* Create a new userscript in your manager
+	* Copy and paste the script code into the editor
+	* Save and enable the script
 
 ## Usage
 
@@ -65,11 +74,12 @@ The script automatically redirects to the appropriate service based on the bang 
 
 ## Technical Notes
 
-- The script prevents redirection loops by adding a flag to URLs
-- Bangs are processed in order of length (longest first) to avoid conflicts
-- Special handling is implemented for Ecosia to properly differentiate between similar bangs (like `!s` vs `!summary`)
-- Qwant searches use the `q` parameter with `t=web` for proper redirects
-- Mullvad Leta searches use the `q` parameter with `engine=brave` to specify the search engine
+* The script prevents redirection loops by adding a flag to URLs
+* Bangs are processed in order of length (longest first) to avoid conflicts
+* Special handling is implemented for Ecosia to properly differentiate between similar bangs (like `!s` vs `!summary`)
+* Qwant searches use the `q` parameter with `t=web` for proper redirects
+* Mullvad Leta searches use the `q` parameter with `engine=brave` to specify the search engine
+* **Cache Note:** The script keeps all the bangs in cache for 24 hours to improve performance and reduce the number of requests to the GitHub repository. This means that you will see the same bangs even if the repository is updated within that time frame.
 
 ## License
 
