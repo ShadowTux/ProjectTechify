@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Enhanced Search !Bang Redirects v2
 // @namespace    http://your.namespace.here
-// @version      2.0
+// @version      2.1
 // @description  Redirects searches with custom bangs and DuckDuckGo bangs loaded from GitHub
 // @match        *://*.google.com/*
 // @match        *://*.bing.com/*
