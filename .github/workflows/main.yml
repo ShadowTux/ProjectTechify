@@ -7,7 +7,7 @@ on:
   workflow_dispatch: # Allow manual triggering
   push:
     branches: [main, master]
-    paths: ['.github/workflows/update-ddg-bangs.yml'] # Run when this workflow is updated
+    paths: ['.github/workflows/update-ddg-bangs.yml', 'scripts/update-bangs.js']
 
 jobs:
   update-bangs:
@@ -24,331 +24,8 @@ jobs:
         with:
           node-version: '20'
           
-      - name: Create scripts directory
-        run: mkdir -p scripts
-        
-      - name: Create update script
-        run: |
-          cat > scripts/update-bangs.js << 'EOF'
-          const https = require('https');
-          const fs = require('fs');
-          const path = require('path');
-
-          const DDG_BANG_URL = 'https://duckduckgo.com/bang.js';
-          const OUTPUT_FILE = 'src/bang.ts';
-
-          function fetchBangs() {
-            return new Promise((resolve, reject) => {
-              console.log('Fetching bangs from DuckDuckGo...');
-              
-              https.get(DDG_BANG_URL, (res) => {
-                let data = '';
-                
-                res.on('data', (chunk) => {
-                  data += chunk;
-                });
-                
-                res.on('end', () => {
-                  try {
-                    console.log('Successfully fetched bang data');
-                    console.log(`Data length: ${data.length} characters`);
-                    resolve(data);
-                  } catch (error) {
-                    reject(error);
-                  }
-                });
-              }).on('error', (error) => {
-                reject(error);
-              });
-            });
-          }
-
-          function parseBangs(jsContent) {
-            console.log('Parsing bang data...');
-            
-            try {
-              // Strategy 1: Execute the JavaScript in a safe context
-              console.log('Trying strategy 1: Safe JavaScript execution...');
-              
-              // Create a sandbox environment
-              const sandbox = {
-                bangs: null,
-                window: {},
-                document: {},
-                console: { log: () => {} }
-              };
-              
-              // Try to evaluate the JavaScript safely
-              const vm = require('vm');
-              const context = vm.createContext(sandbox);
-              
-              // Wrap the JS content to capture any assignment
-              const wrappedJs = `
-                ${jsContent}
-                
-                // Try to find the bangs data in common variable names
-                if (typeof bangs !== 'undefined') {
-                  this.bangs = bangs;
-                } else if (typeof window !== 'undefined' && window.bangs) {
-                  this.bangs = window.bangs;
-                } else {
-                  // Look for any array that looks like bangs
-                  for (let key in this) {
-                    if (Array.isArray(this[key]) && this[key].length > 100) {
-                      const first = this[key][0];
-                      if (first && typeof first === 'object' && first.t && first.u) {
-                        this.bangs = this[key];
-                        break;
-                      }
-                    }
-                  }
-                }
-              `;
-              
-              vm.runInContext(wrappedJs, context, { timeout: 5000 });
-              
-              if (context.bangs && Array.isArray(context.bangs)) {
-                console.log(`Successfully parsed ${context.bangs.length} bangs using JavaScript execution`);
-                return context.bangs;
-              }
-              
-            } catch (e) {
-              console.log('Strategy 1 failed:', e.message);
-            }
-            
-            // Strategy 2: Regex extraction with better cleaning
-            console.log('Trying strategy 2: Advanced regex extraction...');
-            
-            try {
-              // Look for arrays that contain objects with bang-like properties
-              const arrayRegex = /\[[\s\S]*?\{[\s\S]*?"t"\s*:\s*"[^"]*"[\s\S]*?"u"\s*:\s*"[^"]*"[\s\S]*?\}[\s\S]*?\]/g;
-              const matches = jsContent.match(arrayRegex);
-              
-              if (matches) {
-                for (let match of matches) {
-                  try {
-                    // Clean up the JavaScript to make it valid JSON
-                    let cleanJson = match
-                      .replace(/'/g, '"')                    // Replace single quotes
-                      .replace(/(\w+)\s*:/g, '"$1":')        // Quote unquoted keys
-                      .replace(/,(\s*[}\]])/g, '$1')         // Remove trailing commas
-                      .replace(/:\s*undefined/g, ': null')   // Replace undefined with null
-                      .replace(/:\s*true/g, ': true')        // Ensure booleans are correct
-                      .replace(/:\s*false/g, ': false')      // Ensure booleans are correct
-                      .replace(/:\s*(\d+)/g, ': $1');        // Ensure numbers are correct
-                    
-                    const parsed = JSON.parse(cleanJson);
-                    
-                    if (Array.isArray(parsed) && parsed.length > 10) {
-                      const first = parsed[0];
-                      if (first && typeof first === 'object' && first.t && first.u) {
-                        console.log(`Successfully parsed ${parsed.length} bangs using regex extraction`);
-                        return parsed;
-                      }
-                    }
-                  } catch (e) {
-                    continue;
-                  }
-                }
-              }
-            } catch (e) {
-              console.log('Strategy 2 failed:', e.message);
-            }
-            
-            // Strategy 3: Line-by-line object parsing
-            console.log('Trying strategy 3: Line-by-line parsing...');
-            
-            try {
-              const bangs = [];
-              const lines = jsContent.split('\n');
-              let currentObject = '';
-              let braceCount = 0;
-              
-              for (let line of lines) {
-                if (line.includes('{')) {
-                  braceCount += (line.match(/\{/g) || []).length;
-                  currentObject += line;
-                }
-                
-                if (braceCount > 0) {
-                  if (line.includes('}')) {
-                    braceCount -= (line.match(/\}/g) || []).length;
-                    if (!currentObject.includes(line)) {
-                      currentObject += line;
-                    }
-                    
-                    if (braceCount === 0) {
-                      try {
-                        // Clean and parse individual object
-                        let cleanObj = currentObject
-                          .replace(/'/g, '"')
-                          .replace(/(\w+)\s*:/g, '"$1":')
-                          .replace(/,(\s*})/g, '$1')
-                          .replace(/:\s*undefined/g, ': null');
-                        
-                        const obj = JSON.parse(cleanObj);
-                        if (obj.t && obj.u) {
-                          bangs.push(obj);
-                        }
-                      } catch (e) {
-                        // Skip invalid objects
-                      }
-                      currentObject = '';
-                    }
-                  } else if (braceCount > 0) {
-                    currentObject += line;
-                  }
-                }
-              }
-              
-              if (bangs.length > 10) {
-                console.log(`Successfully parsed ${bangs.length} bangs using line-by-line parsing`);
-                return bangs;
-              }
-            } catch (e) {
-              console.log('Strategy 3 failed:', e.message);
-            }
-            
-            // Strategy 4: Fallback - create a basic set from known patterns
-            console.log('All parsing strategies failed, creating fallback data...');
-            
-            // Extract any potential bang triggers and URLs
-            const bangPattern = /"t"\s*:\s*"([^"]+)"[\s\S]*?"u"\s*:\s*"([^"]+)"/g;
-            const bangs = [];
-            let match;
-            
-            while ((match = bangPattern.exec(jsContent)) !== null) {
-              bangs.push({
-                t: match[1],
-                s: match[1], // Use trigger as description fallback
-                u: match[2],
-                d: new URL(match[2]).hostname.replace('www.', '') || 'unknown.com'
-              });
-            }
-            
-            if (bangs.length > 0) {
-              console.log(`Created ${bangs.length} bangs from fallback parsing`);
-              return bangs;
-            }
-            
-            console.error('All parsing strategies failed completely');
-            return null;
-          }
-
-          function generateTypeScriptFile(bangArray) {
-            console.log('Generating TypeScript file...');
-            
-            const timestamp = new Date().toISOString();
-            const header = `// This file is auto-generated by .github/workflows/update-ddg-bangs.yml
-// Do not edit manually - changes will be overwritten
-// Last updated: ${timestamp}
-// Total bangs: ${bangArray.length}
-
-export const bangs = [`;
-            
-            const footer = `];
-
-export default bangs;
-
-// Export count for reference
-export const bangCount = ${bangArray.length};`;
-            
-            const bangObjects = bangArray.map(bang => {
-              // Ensure we have the minimum required fields
-              const obj = {
-                t: bang.t || 'unknown',
-                s: bang.s || bang.t || 'Unknown',
-                u: bang.u || 'https://example.com',
-                d: bang.d || 'unknown.com'
-              };
-              
-              // Add optional fields if they exist
-              if (bang.c) obj.c = bang.c;
-              if (bang.sc) obj.sc = bang.sc;
-              if (bang.r !== undefined) obj.r = bang.r;
-              
-              return JSON.stringify(obj, null, 2);
-            });
-            
-            const content = header + '\n' + bangObjects.join(',\n') + '\n' + footer;
-            
-            return content;
-          }
-
-          async function main() {
-            try {
-              // Create src directory if it doesn't exist
-              const srcDir = path.dirname(OUTPUT_FILE);
-              if (!fs.existsSync(srcDir)) {
-                fs.mkdirSync(srcDir, { recursive: true });
-                console.log(`Created directory: ${srcDir}`);
-              }
-              
-              // Fetch and parse bangs
-              const jsContent = await fetchBangs();
-              
-              // Save raw content for debugging
-              fs.writeFileSync('debug-bang-raw.js', jsContent);
-              console.log('Saved raw content to debug-bang-raw.js for inspection');
-              
-              const bangArray = parseBangs(jsContent);
-              
-              if (!bangArray || bangArray.length === 0) {
-                console.error('Failed to parse any bangs');
-                process.exit(1);
-              }
-              
-              console.log(`Successfully parsed ${bangArray.length} bangs`);
-              
-              // Show sample of parsed data
-              if (bangArray.length > 0) {
-                console.log('Sample bang:', JSON.stringify(bangArray[0], null, 2));
-              }
-              
-              // Generate TypeScript file
-              const tsContent = generateTypeScriptFile(bangArray);
-              
-              // Write to file
-              fs.writeFileSync(OUTPUT_FILE, tsContent, 'utf8');
-              console.log(`Successfully wrote ${bangArray.length} bangs to ${OUTPUT_FILE}`);
-              
-              // Verify file was created
-              if (fs.existsSync(OUTPUT_FILE)) {
-                const stats = fs.statSync(OUTPUT_FILE);
-                console.log(`File size: ${stats.size} bytes`);
-                console.log('✅ Bang list update completed successfully!');
-              } else {
-                console.error('❌ Failed to create output file');
-                process.exit(1);
-              }
-              
-            } catch (error) {
-              console.error('❌ Error updating bangs:', error);
-              console.error('Stack trace:', error.stack);
-              process.exit(1);
-            }
-          }
-
-          main();
-          EOF
-          
-      - name: Update bang list
+      - name: Run bang update script
         run: node scripts/update-bangs.js
-        
-      - name: Debug - Show raw file info
-        if: failure()
-        run: |
-          echo "Debugging information:"
-          if [ -f "debug-bang-raw.js" ]; then
-            echo "Raw file size:" $(wc -c < debug-bang-raw.js)
-            echo "First 500 characters:"
-            head -c 500 debug-bang-raw.js
-            echo ""
-            echo "Last 500 characters:"
-            tail -c 500 debug-bang-raw.js
-          else
-            echo "Raw debug file not found"
-          fi
         
       - name: Check for changes
         id: verify-changed-files
@@ -357,6 +34,11 @@ export const bangCount = ${bangArray.length};`;
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "Files changed:"
             git status --porcelain
+            if [ -f "src/bang.ts" ]; then
+              echo "Bang file stats:"
+              wc -l src/bang.ts
+              ls -lh src/bang.ts
+            fi
           else
             echo "changed=false" >> $GITHUB_OUTPUT
             echo "No changes detected"
@@ -368,14 +50,16 @@ export const bangCount = ${bangArray.length};`;
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
           git add src/bang.ts
-          git commit -m "chore: update bang list from DuckDuckGo API [skip ci]"
+          git commit -m "chore: update bang list from DuckDuckGo [skip ci]"
           git push
           
       - name: Summary
-        if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
-          echo "✅ Bang list updated successfully!"
-          echo "📊 File stats:"
-          ls -lh src/bang.ts 2>/dev/null || echo "File not found"
-          echo "🔍 Preview of generated file:"
-          head -20 src/bang.ts 2>/dev/null || echo "Could not preview file"
+          if [ -f "src/bang.ts" ]; then
+            echo "✅ Bang update completed!"
+            echo "📊 Final stats:"
+            wc -l src/bang.ts
+            ls -lh src/bang.ts
+          else
+            echo "❌ No bang file generated"
+          fi
