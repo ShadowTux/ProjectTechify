@@ -19,15 +19,15 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Setup Node.js environment
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
 
-      - name: Handle lock files
+      - name: Check and handle missing lock files
         run: |
-          if [ ! -f package-lock.json ] && [ ! -f yarn.lock ]; then
+          if [ ! -f package-lock.json ]; then
             echo "No dependency lock file found. Generating package-lock.json..."
             npm install --package-lock-only
           else
