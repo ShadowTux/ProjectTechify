@@ -1,39 +1,56 @@
 name: Update Bang List
 
 on:
+  schedule:
+    # Run on the 1st of every month at 2 AM UTC
+    - cron: '0 2 1 * *'
+  workflow_dispatch: # Allow manual triggering
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [main, master]
+    paths: ['.github/workflows/main.yml'] # Run when this workflow is updated
 
 jobs:
   update-bangs:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
-      - name: Setup Node.js environment
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
           cache: 'npm'
 
-      - name: Install dependencies and generate lock file if missing
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Update bang list
+        run: node scripts/update-bangs.js
+        
+      - name: Check for changes
+        id: verify-changed-files
         run: |
-          if [ ! -f package-lock.json ] && [ ! -f yarn.lock ]; then
-            echo "No dependency lock file found. Generating package-lock.json..."
-            npm install --package-lock-only
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
           else
-            echo "Dependency lock file found."
-            npm install
+            echo "changed=false" >> $GITHUB_OUTPUT
           fi
-
-      - name: Update Bang List
+          
+      - name: Commit and push changes
+        if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
-          echo "## Bang List Update Results" >> $GITHUB_STEP_SUMMARY
-
-      - name: Post job cleanup
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add src/bang.ts
+          git commit -m "chore: update bang list from DuckDuckGo API [skip ci]"
+          git push
+          
+      - name: Build and deploy
+        if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
-          echo "Cleaning up workspace..."
+          npm run build
+          echo "Bang list updated and built successfully!" 
