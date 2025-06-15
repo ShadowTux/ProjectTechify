@@ -23,6 +23,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'  # Cache npm dependencies for faster builds
           
       - name: Install dependencies
         run: npm ci
@@ -35,15 +36,18 @@ jobs:
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Files changed:"
+            git status --porcelain
           else
             echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
           fi
           
       - name: Commit and push changes
         if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git add src/bang.ts
           git commit -m "chore: update bang list from DuckDuckGo API [skip ci]"
           git push
@@ -52,4 +56,15 @@ jobs:
         if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
           npm run build
-          echo "Bang list updated and built successfully!" 
+          echo "Bang list updated and built successfully!"
+          
+      # Optional: Create a summary
+      - name: Job Summary
+        if: always()
+        run: |
+          echo "## Bang List Update Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.verify-changed-files.outputs.changed }}" == "true" ]; then
+            echo "✅ Bang list was updated and changes were committed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ No changes detected - bang list is up to date" >> $GITHUB_STEP_SUMMARY
+          fi
