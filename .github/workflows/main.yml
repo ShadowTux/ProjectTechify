@@ -20,12 +20,20 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install dependencies and generate lock file if missing
         run: |
           if [ ! -f package-lock.json ] && [ ! -f yarn.lock ]; then
             echo "No dependency lock file found. Generating package-lock.json..."
             npm install --package-lock-only
+          else
+            echo "Dependency lock file found."
+            npm install
           fi
+
       - name: Update Bang List
         run: |
           echo "## Bang List Update Results" >> $GITHUB_STEP_SUMMARY
+
+      - name: Post job cleanup
+        run: |
+          echo "Cleaning up workspace..."
