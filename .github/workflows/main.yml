@@ -1,70 +1,31 @@
 name: Update Bang List
 
 on:
-  schedule:
-    # Run on the 1st of every month at 2 AM UTC
-    - cron: '0 2 1 * *'
-  workflow_dispatch: # Allow manual triggering
   push:
-    branches: [main, master]
-    paths: ['.github/workflows/main.yml'] # Run when this workflow is updated
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   update-bangs:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Setup Node.js
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'  # Cache npm dependencies for faster builds
-          
+          cache: 'npm'
+
       - name: Install dependencies
-        run: npm ci
-        
-      - name: Update bang list
-        run: node scripts-for-workflow/update-ddg-bangs.js
-        
-      - name: Check for changes
-        id: verify-changed-files
         run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "Files changed:"
-            git status --porcelain
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "No changes detected"
+          if [ ! -f package-lock.json ] && [ ! -f yarn.lock ]; then
+            echo "No dependency lock file found. Generating package-lock.json..."
+            npm install --package-lock-only
           fi
-          
-      - name: Commit and push changes
-        if: steps.verify-changed-files.outputs.changed == 'true'
-        run: |
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add src/bang.ts
-          git commit -m "chore: update bang list from DuckDuckGo API [skip ci]"
-          git push
-          
-      - name: Build and deploy
-        if: steps.verify-changed-files.outputs.changed == 'true'
-        run: |
-          npm run build
-          echo "Bang list updated and built successfully!"
-          
-      # Optional: Create a summary
-      - name: Job Summary
-        if: always()
+      - name: Update Bang List
         run: |
           echo "## Bang List Update Results" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.verify-changed-files.outputs.changed }}" == "true" ]; then
-            echo "✅ Bang list was updated and changes were committed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "ℹ️ No changes detected - bang list is up to date" >> $GITHUB_STEP_SUMMARY
-          fi
