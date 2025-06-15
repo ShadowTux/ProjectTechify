@@ -50,7 +50,7 @@ THE SOFTWARE.
     const BANG_CACHE_KEY = 'cached_bangs_v2';
     const BANG_CACHE_TIMESTAMP_KEY = 'cached_bangs_timestamp_v2';
     const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-    const GITHUB_BANG_URL = 'https://raw.githubusercontent.com/dev-bhaskar8/unduckling/refs/heads/vaasmain/src/bang.ts';
+    const GITHUB_BANG_URL = 'https://raw.githubusercontent.com/ShadowTux/ProjectTechify/refs/heads/main/src/bang.ts';
 
     // Custom bangs that take priority over DuckDuckGo bangs
     const CUSTOM_BANGS = {
