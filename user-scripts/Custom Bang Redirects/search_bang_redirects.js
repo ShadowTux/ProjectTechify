@@ -65,6 +65,11 @@ THE SOFTWARE.
             description: 'ChatGPT AI Assistant',
             category: 'AI'
         },
+        '!claude': {
+            url: 'https://claude.ai',
+            description: 'Claude AI Assistant',
+            category: 'AI'
+        },
         '!summary': {
             url: 'https://search.brave.com/search?q={query}&source=llmSuggest&summary=1',
             description: 'Brave Search with AI Summary',
