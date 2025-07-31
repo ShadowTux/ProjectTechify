@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Enhanced Search !Bang Redirects v2
 // @namespace    http://your.namespace.here
-// @version      2.1
+// @version      2.2
 // @description  Redirects searches with custom bangs and DuckDuckGo bangs loaded from GitHub
 // @match        *://*.google.com/*
 // @match        *://*.bing.com/*
@@ -202,8 +202,16 @@ THE SOFTWARE.
     // Helper function to perform a direct redirect
     function performRedirect(url, query) {
         const finalUrl = url.replace('{query}', encodeURIComponent(query));
-        const separator = finalUrl.includes('?') ? '&' : '?';
-        const redirectUrl = finalUrl + separator + 'bang_redirect=1&timestamp=' + Date.now();
+
+        // For URLs that don't contain {query} placeholder, don't add extra parameters
+        let redirectUrl;
+        if (url.includes('{query}')) {
+            const separator = finalUrl.includes('?') ? '&' : '?';
+            redirectUrl = finalUrl + separator + 'bang_redirect=1&timestamp=' + Date.now();
+        } else {
+            // For simple redirects like Claude.ai, just use the URL as-is
+            redirectUrl = finalUrl;
+        }
 
         console.log("Redirecting to:", redirectUrl);
         localStorage.setItem('lastRedirectTime', Date.now().toString());
@@ -366,6 +374,8 @@ THE SOFTWARE.
     function processBang(query) {
         if (!query) return false;
 
+        console.log(`Processing query for bangs: "${query}"`);
+
         // Check for redirection loops
         const wasRedirectedRecently = (Date.now() - (parseInt(localStorage.getItem('lastRedirectTime') || 0)) < 2000);
         if (wasRedirectedRecently) {
@@ -375,6 +385,7 @@ THE SOFTWARE.
 
         // Check if query contains bang_redirect parameter (prevents processing already redirected URLs)
         if (query.includes('bang_redirect=1')) {
+            console.log("Skipping bang processing - already redirected");
             return false;
         }
 
@@ -387,6 +398,7 @@ THE SOFTWARE.
                 const cleanQuery = query.replace(bang, '').trim();
 
                 console.log(`Found bang: ${bang} -> ${allBangs[bang].description}, query: "${cleanQuery}"`);
+                console.log(`Bang URL: ${allBangs[bang].url}`);
 
                 // Perform redirect
                 performRedirect(allBangs[bang].url, cleanQuery);
@@ -394,6 +406,7 @@ THE SOFTWARE.
             }
         }
 
+        console.log("No matching bang found");
         return false;
     }
 
