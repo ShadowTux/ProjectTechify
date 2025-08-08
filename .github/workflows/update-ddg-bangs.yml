@@ -2,12 +2,12 @@ name: Update Bang List
 
 on:
   schedule:
-    # Run on the 1st of every month at 2 AM UTC
+    # Run on the first of every month at 2 AM UTC
     - cron: '0 2 1 * *'
   workflow_dispatch: # Allow manual triggering
   push:
     branches: [main, master]
-    paths: ['.github/workflows/update-bangs.yml'] # Run when this workflow is updated
+    paths: ['.github/workflows/update-ddg-bangs.yml'] # Run when this workflow is updated
 
 jobs:
   update-bangs:
@@ -24,11 +24,8 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Install dependencies
-        run: npm ci
-        
       - name: Update bang list
-        run: node scripts/update-bangs.js
+        run: node scripts-for-workflow/update-ddg-bangs.js
         
       - name: Check for changes
         id: verify-changed-files
@@ -47,9 +44,3 @@ jobs:
           git add src/bang.ts
           git commit -m "chore: update bang list from DuckDuckGo API [skip ci]"
           git push
-          
-      - name: Build and deploy
-        if: steps.verify-changed-files.outputs.changed == 'true'
-        run: |
-          npm run build
-          echo "Bang list updated and built successfully!" 
