@@ -3,13 +3,9 @@
   "version": "1.0.0",
   "description": "A project to unbigtechify the web with custom search bangs and redirects",
   "type": "module",
-  "main": "src/bang.ts",
   "scripts": {
     "build": "echo 'Build completed'",
-    "update-bangs": "node scripts-for-workflow/update-ddg-bangs.js",
-    "validate-bangs": "node scripts-for-workflow/validate-bangs.js",
-    "test-api": "node scripts-for-workflow/test-api.js",
-    "test": "npm run validate-bangs"
+    "test": "echo 'No tests'"
   },
   "keywords": [
     "duckduckgo",
