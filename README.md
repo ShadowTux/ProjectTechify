@@ -21,24 +21,29 @@ This project automatically updates the DuckDuckGo bang list every month using Gi
 4. **Auto-commit**: Automatically commits and pushes changes if updates are found
 5. **Build Verification**: Runs build process to ensure everything works
 
-### Two Workflow Options
+### Three Workflow Options
 
 #### Option 1: Direct Push (`.github/workflows/update-ddg-bangs.yml`)
 - Updates bangs and pushes directly to main branch
 - **Note**: Only works if main branch is not protected
 - **Use case**: Unprotected branches or development repositories
 
-#### Option 2: Pull Request (`.github/workflows/update-ddg-bangs-pr.yml`) ⭐ **Recommended**
-- Updates bangs and creates pull requests for review
-- Works with protected branches
-- Provides review process before merging
-- **Use case**: Production repositories with branch protection
+#### Option 2: Pull Request with PAT (`.github/workflows/update-ddg-bangs-pr.yml`)
+- Updates bangs and creates pull requests using Personal Access Token
+- **Requires**: `PAT_TOKEN` secret in repository settings
+- **Use case**: Protected branches with PAT configured
+
+#### Option 3: Simple Pull Request (`.github/workflows/update-ddg-bangs-simple.yml`) ⭐ **Recommended for Most Users**
+- Updates bangs and creates pull requests using standard GITHUB_TOKEN
+- **Requires**: No additional secrets
+- **Use case**: Protected branches, no PAT needed
+- **How**: Uses `peter-evans/create-pull-request` action
 
 ### Manual Trigger
 
 You can manually trigger the update by:
 1. Going to the Actions tab in GitHub
-2. Selecting either workflow based on your needs
+2. Selecting the workflow that best fits your setup
 3. Clicking "Run workflow"
 
 ### Protected Branches
@@ -48,7 +53,8 @@ If you're getting errors about protected branches, see [PROTECTED_BRANCHES.md](P
 ### Workflow Files
 
 - `.github/workflows/update-ddg-bangs.yml` - Direct push workflow
-- `.github/workflows/update-ddg-bangs-pr.yml` - Pull request workflow
+- `.github/workflows/update-ddg-bangs-pr.yml` - Pull request workflow (requires PAT_TOKEN)
+- `.github/workflows/update-ddg-bangs-simple.yml` - Simple PR workflow (no additional secrets)
 - `scripts-for-workflow/update-ddg-bangs.js` - Node.js script for fetching and converting bangs
 - `src/bang.ts` - Auto-generated TypeScript file with all bangs
 

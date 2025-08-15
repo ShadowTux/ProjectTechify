@@ -1,4 +1,4 @@
-name: Update Bang List (Pull Request)
+name: Update Bang List (Simple PR)
 
 on:
   schedule:
@@ -14,9 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # Use personal access token for protected branches
-          token: ${{ secrets.PAT_TOKEN }}
-          repository: ${{ github.repository }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -46,28 +44,36 @@ jobs:
           
       - name: Create Pull Request
         if: steps.verify-changed-files.outputs.changed == 'true'
-        run: |
-          # Configure git
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          
-          # Create a new branch
-          BRANCH_NAME="update-bangs-$(date +%Y%m%d-%H%M%S)"
-          git checkout -b "$BRANCH_NAME"
-          
-          # Add and commit changes
-          git add src/bang.ts
-          git commit -m "chore: update bang list from DuckDuckGo API"
-          
-          # Push the branch
-          git push --set-upstream origin "$BRANCH_NAME"
-          
-          # Create pull request using GitHub CLI
-          gh pr create \
-            --title "🔄 Update DuckDuckGo Bang List" \
-            --body "This PR updates the DuckDuckGo bang list with the latest entries from their API. Generated on: $(date -u +"%Y-%m-%d %H:%M UTC"). Please review and merge if everything looks good." \
-            --base main \
-            --head "$BRANCH_NAME"
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update bang list from DuckDuckGo API'
+          title: '🔄 Update DuckDuckGo Bang List'
+          body: |
+            This PR updates the DuckDuckGo bang list with the latest entries from their API.
+            
+            ## Changes
+            - Updated bang list from DuckDuckGo API
+            - Generated on: ${{ github.event.head_commit.timestamp || 'Unknown' }}
+            - File: src/bang.ts
+            
+            ## What this does
+            - Fetches latest bangs from https://duckduckgo.com/bang.js
+            - Converts to our TypeScript format
+            - Ensures all users have access to the most current search shortcuts
+            
+            ## Review
+            Please review the changes and merge if everything looks good.
+            
+            ---
+            *This PR was automatically created by GitHub Actions*
+          branch: update-bangs-${{ github.run_id }}
+          delete-branch: true
+          labels: |
+            automation
+            bangs
+            duckduckgo
+          assignees: ${{ github.repository_owner }}
           
       - name: Build verification
         if: steps.verify-changed-files.outputs.changed == 'true'
@@ -85,7 +91,7 @@ jobs:
           if [ "${{ steps.verify-changed-files.outputs.changed }}" == "true" ]; then
             echo "✅ Bang list updated successfully"
             echo "📝 Pull request created for review"
-            echo "🔍 Check the Actions tab for the PR link"
+            echo "🔍 Check the Pull Requests tab for the new PR"
           else
             echo "ℹ️ No updates needed"
           fi
