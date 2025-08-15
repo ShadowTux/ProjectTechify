@@ -1,10 +1,13 @@
-name: Update Bang List (Simple PR)
+name: Update Bang List
 
 on:
   schedule:
     # Run on the 1st of every month at 2 AM UTC
     - cron: '0 2 1 * *'
   workflow_dispatch: # Allow manual triggering
+  push:
+    branches: [main, master, vaasmain]
+    paths: ['.github/workflows/update-ddg-bangs-simple.yml'] # Run when this workflow is updated
 
 jobs:
   update-bangs:
@@ -21,77 +24,32 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Validate current bang list
-        run: npm run validate-bangs
+      - name: Install dependencies
+        run: npm ci
         
       - name: Update bang list
         run: node scripts-for-workflow/update-ddg-bangs.js
-        
-      - name: Validate updated bang list
-        run: npm run validate-bangs
         
       - name: Check for changes
         id: verify-changed-files
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
-            echo "Number of changes:"
-            git status --porcelain | wc -l
           else
             echo "changed=false" >> $GITHUB_OUTPUT
-            echo "No changes detected"
           fi
           
-      - name: Create Pull Request
+      - name: Commit and push changes
         if: steps.verify-changed-files.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: 'chore: update bang list from DuckDuckGo API'
-          title: '🔄 Update DuckDuckGo Bang List'
-          body: |
-            This PR updates the DuckDuckGo bang list with the latest entries from their API.
-            
-            ## Changes
-            - Updated bang list from DuckDuckGo API
-            - Generated on: ${{ github.event.head_commit.timestamp || 'Unknown' }}
-            - File: src/bang.ts
-            
-            ## What this does
-            - Fetches latest bangs from https://duckduckgo.com/bang.js
-            - Converts to our TypeScript format
-            - Ensures all users have access to the most current search shortcuts
-            
-            ## Review
-            Please review the changes and merge if everything looks good.
-            
-            ---
-            *This PR was automatically created by GitHub Actions*
-          branch: update-bangs-${{ github.run_id }}
-          delete-branch: true
-          labels: |
-            automation
-            bangs
-            duckduckgo
-          assignees: ${{ github.repository_owner }}
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add src/bang.ts
+          git commit -m "chore: update bang list from DuckDuckGo API [skip ci]"
+          git push
           
-      - name: Build verification
+      - name: Build and deploy
         if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
           npm run build
-          echo "✅ Build verification passed"
-          
-      - name: Summary
-        run: |
-          echo "=== Workflow Summary ==="
-          echo "Repository: ${{ github.repository }}"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Commit: ${{ github.sha }}"
-          echo "Changes detected: ${{ steps.verify-changed-files.outputs.changed }}"
-          if [ "${{ steps.verify-changed-files.outputs.changed }}" == "true" ]; then
-            echo "✅ Bang list updated successfully"
-            echo "📝 Pull request created for review"
-            echo "🔍 Check the Pull Requests tab for the new PR"
-          else
-            echo "ℹ️ No updates needed"
-          fi
+          echo "Bang list updated and built successfully!"

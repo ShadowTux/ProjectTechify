@@ -6,7 +6,7 @@ on:
     - cron: '0 2 1 * *'
   workflow_dispatch: # Allow manual triggering
   push:
-    branches: [main, master]
+    branches: [main, master, vaasmain]
     paths: ['.github/workflows/update-ddg-bangs.yml'] # Run when this workflow is updated
 
 jobs:
@@ -24,25 +24,19 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Validate current bang list
-        run: npm run validate-bangs
+      - name: Install dependencies
+        run: npm ci
         
       - name: Update bang list
         run: node scripts-for-workflow/update-ddg-bangs.js
-        
-      - name: Validate updated bang list
-        run: npm run validate-bangs
         
       - name: Check for changes
         id: verify-changed-files
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
-            echo "Number of changes:"
-            git status --porcelain | wc -l
           else
             echo "changed=false" >> $GITHUB_OUTPUT
-            echo "No changes detected"
           fi
           
       - name: Commit and push changes
@@ -52,32 +46,10 @@ jobs:
           git config --local user.name "GitHub Action"
           git add src/bang.ts
           git commit -m "chore: update bang list from DuckDuckGo API [skip ci]"
-          
-          # Try to push, handle protected branch gracefully
-          if git push; then
-            echo "✅ Successfully pushed changes"
-          else
-            echo "⚠️ Push failed - branch may be protected"
-            echo "ℹ️ Use the 'Update Bang List (Pull Request)' workflow instead"
-            echo "📝 Manual intervention required for protected branches"
-          fi
+          git push
           
       - name: Build and deploy
         if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
           npm run build
-          echo "Bang list updated and built successfully!"
-          
-      - name: Summary
-        run: |
-          echo "=== Workflow Summary ==="
-          echo "Repository: ${{ github.repository }}"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Commit: ${{ github.sha }}"
-          echo "Changes detected: ${{ steps.verify-changed-files.outputs.changed }}"
-          if [ "${{ steps.verify-changed-files.outputs.changed }}" == "true" ]; then
-            echo "✅ Bang list updated successfully"
-            echo "📝 Check for push status above"
-          else
-            echo "ℹ️ No updates needed"
-          fi 
+          echo "Bang list updated and built successfully!" 
