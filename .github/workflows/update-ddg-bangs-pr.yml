@@ -1,13 +1,10 @@
-name: Update Bang List
+name: Update Bang List (Pull Request)
 
 on:
   schedule:
     # Run on the 1st of every month at 2 AM UTC
     - cron: '0 2 1 * *'
   workflow_dispatch: # Allow manual triggering
-  push:
-    branches: [main, master]
-    paths: ['.github/workflows/update-ddg-bangs.yml'] # Run when this workflow is updated
 
 jobs:
   update-bangs:
@@ -17,7 +14,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Use personal access token for protected branches
+          token: ${{ secrets.PAT_TOKEN }}
           
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -45,28 +43,36 @@ jobs:
             echo "No changes detected"
           fi
           
-      - name: Commit and push changes
+      - name: Create Pull Request
         if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
+          # Configure git
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          
+          # Create a new branch
+          BRANCH_NAME="update-bangs-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH_NAME"
+          
+          # Add and commit changes
           git add src/bang.ts
-          git commit -m "chore: update bang list from DuckDuckGo API [skip ci]"
+          git commit -m "chore: update bang list from DuckDuckGo API"
           
-          # Try to push, handle protected branch gracefully
-          if git push; then
-            echo "✅ Successfully pushed changes"
-          else
-            echo "⚠️ Push failed - branch may be protected"
-            echo "ℹ️ Use the 'Update Bang List (Pull Request)' workflow instead"
-            echo "📝 Manual intervention required for protected branches"
-          fi
+          # Push the branch
+          git push --set-upstream origin "$BRANCH_NAME"
           
-      - name: Build and deploy
+          # Create pull request using GitHub CLI
+          gh pr create \
+            --title "🔄 Update DuckDuckGo Bang List" \
+            --body "This PR updates the DuckDuckGo bang list with the latest entries from their API. Generated on: $(date -u +"%Y-%m-%d %H:%M UTC"). Please review and merge if everything looks good." \
+            --base main \
+            --head "$BRANCH_NAME"
+          
+      - name: Build verification
         if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
           npm run build
-          echo "Bang list updated and built successfully!"
+          echo "✅ Build verification passed"
           
       - name: Summary
         run: |
@@ -77,7 +83,8 @@ jobs:
           echo "Changes detected: ${{ steps.verify-changed-files.outputs.changed }}"
           if [ "${{ steps.verify-changed-files.outputs.changed }}" == "true" ]; then
             echo "✅ Bang list updated successfully"
-            echo "📝 Check for push status above"
+            echo "📝 Pull request created for review"
+            echo "🔍 Check the Actions tab for the PR link"
           else
             echo "ℹ️ No updates needed"
-          fi 
+          fi
