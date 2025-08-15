@@ -1,53 +1,53 @@
-# **Enhanced Search !Bang Redirects v2.2**
+# **Enhanced Search !Bang Redirects v3.1**
 
-The Enhanced Search !Bang Redirects userscript improves your search experience by introducing custom bang commands that redirect searches to various AI services, search engines, and content platforms across multiple search engines, including Google, Bing, Startpage, Brave, Ecosia, DuckDuckGo, Qwant, Mullvad Leta, and Mojeek.
+The Enhanced Search !Bang Redirects userscript improves your search experience by introducing custom bang commands and live DuckDuckGo bang lookups. It works across multiple search engines, including Google, Bing, Startpage, Brave, Ecosia, DuckDuckGo, Qwant, Mullvad Leta, and Mojeek.
 
 ## Features
 
-### AI Service Bangs:
+### AI Service Bangs
 - `!chatgpt` or `!chat`: Redirects to ChatGPT with the query
-- `!claude`: Redirects to Claude.ai (main site only, no search functionality)
-- `!summary`: Redirects to Brave Search with AI summary feature enabled
-- `!perp`: Redirects to Perplexity.ai with the given query
-- `!youai`: Redirects to You.com's AI chat with the specified query
-- `!phind`: Redirects to Phind.com, optimized for technical searches
-- `!felo`: Redirects to Felo.ai with the given query
-- `!ecoai`: Redirects to Ecosia's AI chat with the given query
-- `!mistral` or `!mis`: Redirects to Mistral AI's chat with the given query
+- `!claude`: Redirects to Claude.ai (main site)
+- `!summary`: Redirects to Brave Search with AI summary
+- `!perp`: Redirects to Perplexity.ai
+- `!youai`: Redirects to You.com's AI chat
+- `!phind`: Redirects to Phind.com (developer-focused)
+- `!felo`: Redirects to Felo.ai
+- `!ecoai`: Redirects to Ecosia's AI chat
+- `!mistral` or `!mis`: Redirects to Mistral AI Chat
 
-### Search Engine & Content Bangs:
-- `!g`: Redirects to Google Search
-- `!s` or `!sp`: Redirects to Startpage
-- `!yt`: Redirects to YouTube search results
-- `!w`: Redirects to Wikipedia search
-- `!nixpkgs`: Redirects to NixOS packages search
-- `!ddg`: Redirects to DuckDuckGo search
-- `!qw` or `!qwant`: Redirects to Qwant web search
-- `!leta`: Redirects to Mullvad Leta search (with Brave as the search engine)
-- `!mj` or `!mojeek`: Redirects to Mojeek search with dark theme
-- `!mjs` or `!sum`: Redirects to Mojeek search with AI summary feature
+### Search Engine & Content Bangs
+- `!g`: Google
+- `!s` or `!sp`: Startpage
+- `!yt`: YouTube
+- `!w`: Wikipedia
+- `!nixpkgs`: NixOS packages
+- `!ddg`: DuckDuckGo
+- `!qw` or `!qwant`: Qwant
+- `!leta`: Mullvad Leta (Brave engine)
+- `!mj` or `!mojeek`: Mojeek
+- `!mjs` or `!sum`: Mojeek with summary
 
-## Enhanced Features in v2.2
+## What’s new in v3.1
 
-### Dynamic Bang Loading:
-- **GitHub Integration**: Automatically loads DuckDuckGo bang database from GitHub repository
-- **Custom Bang Priority**: Custom bangs take precedence over DuckDuckGo bangs to ensure consistent behavior
-- **Smart Caching**: 24-hour cache system for improved performance and reduced network requests
-- **Fallback System**: Uses custom bangs if GitHub loading fails
+### On‑Demand DuckDuckGo Bangs (bang.js)
+- Uses the official `https://duckduckgo.com/bang.js` endpoint at runtime
+- No need to ship or cache a full local bang list file
+- Smart caching of individual bangs for 7 days
 
-### Advanced Redirect Logic:
-- **Intelligent URL Handling**: Properly handles URLs with and without query parameters
-- **Loop Prevention**: Enhanced protection against redirect loops with timestamp tracking
-- **Debug Console**: Type `showBangs()` in browser console to see loaded bang statistics
+### Reliable Redirects
+- Converts DuckDuckGo URLs with `{{{s}}}` into `{query}` at runtime
+- Requires a space after the bang (e.g., `!a2 test`, not `!a2test`)
+- Adds `bang_redirect=1` to avoid redirect loops (no timestamp/localStorage hacks)
 
-### Improved Search Engine Support:
-- **Universal Compatibility**: Works across all major search engines
-- **Special Handling**: Custom logic for Ecosia shopping searches (redirects to Startpage)
-- **Parameter Detection**: Supports multiple search parameter formats (`q`, `query`, `search_query`)
+### Cross‑Browser Support
+- Works in Tampermonkey/Violentmonkey (Chrome/Firefox)
+- Uses `GM_xmlhttpRequest` to avoid CORS issues when fetching `bang.js`
+
+### Ecosia Handling
+- Processes bangs immediately on Ecosia to beat native navigation
+- Redirects Ecosia shopping results to Startpage for better results
 
 ## Supported Search Engines
-
-The script works on the following search engine domains:
 - Google (`google.com`)
 - Bing (`bing.com`)
 - Startpage (`startpage.com`)
@@ -60,73 +60,47 @@ The script works on the following search engine domains:
 
 ## Installation
 
-1. **Install a Userscript Manager:**
-   * [Tampermonkey for Chrome, Firefox, Safari, and Edge](https://tampermonkey.net/)
-   * [Greasemonkey for Firefox](https://www.greasespot.net/)
-   * [Violentmonkey for Chrome, Firefox, and Edge](https://violentmonkey.github.io/)
-
-2. **Recommended: Install Violentmonkey:**
-   * Chrome: [Violentmonkey Chrome Extension](https://chrome.google.com/webstore/detail/violentmonkey/bpeaeghimhilgfimepgamcjbbodcjuhi)
-   * Firefox: [Violentmonkey Firefox Add-on](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)
-
-3. **Add the Userscript:**
-   * Create a new userscript in your manager
-   * Copy and paste the script code into the editor
-   * Save and enable the script
+1. Install a Userscript Manager:
+   - Tampermonkey / Violentmonkey / Greasemonkey
+2. Add the userscript:
+   - Create a new userscript and paste the contents of `search_bang_redirects.js`
+   - Save and enable
 
 ## Usage
 
-In the search bar of any supported search engine, use the bang commands followed by your search terms:
+Type a bang followed by a space and your query on any supported engine:
 
 ```
+!a2 alternative to photoshop
 !chatgpt how to install Linux
-!claude (redirects to main Claude.ai site)
 !yt learn JavaScript tutorial
 !w artificial intelligence
 !g weather forecast
-!qwant privacy tools
-!leta secure vpn
-!sum AI summary search mojeek
 ```
 
-The script automatically redirects to the appropriate service based on the bang used.
+The script detects the bang and redirects to the appropriate site.
+
+## Debugging & Tools
+- `showBangs()` – Prints current status and example custom bangs
+- `testDuckDuckGoBang('!a2')` – Test a single DuckDuckGo bang via bang.js
+- `searchDuckDuckGoBangs('alternative')` – Search bang.js listing for matches
+- `clearDuckDuckGoCache()` – Clears local cached bang lookups
 
 ## Technical Notes
 
-### Core Functionality:
-* **Bang Processing**: Bangs are processed in order of length (longest first) to avoid conflicts
-* **Loop Prevention**: Advanced redirection loop detection with timestamp-based cooldowns
-* **Parameter Handling**: Automatic detection and processing of search parameters across different engines
-* **Error Handling**: Graceful fallback to custom bangs if external sources fail
+### Core Behavior
+- Longest‑first bang matching to avoid overlaps
+- Space‑after‑bang requirement for clarity and to prevent false positives
+- Loop prevention via `bang_redirect=1`
 
-### Performance Optimizations:
-* **Caching System**: 24-hour cache for GitHub-loaded bangs reduces network requests
-* **Asynchronous Loading**: Non-blocking bang database loading for instant page processing
-* **Memory Management**: Efficient storage and retrieval of bang configurations
+### Performance
+- On‑demand requests to `bang.js` with 7‑day per‑bang caching
+- Minimal memory footprint (no full local bang list)
 
-### Special Cases:
-* **Ecosia Shopping**: Automatically redirects shopping searches to Startpage for better results
-* **Claude.ai**: Simple redirect to main site (no search parameters, as Claude doesn't support URL-based search)
-* **Mojeek Themes**: Automatically applies dark theme for better user experience
-* **Query Cleanup**: Intelligent removal of bang triggers from search queries
-
-### Debug Features:
-* **Console Logging**: Detailed logging for troubleshooting and development
-* **Status Command**: Use `showBangs()` in browser console to see:
-  - Number of custom bangs loaded
-  - Number of GitHub bangs loaded
-  - Total bang count
-  - Loading status
-  - Example bang list
-
-### GitHub Integration:
-* **Repository**: Loads bang database from [ShadowTux/ProjectTechify](https://github.com/ShadowTux/ProjectTechify)
-* **Format**: TypeScript array parsing with JSON conversion
-* **Timeout**: 15-second timeout for GitHub requests
-* **Retry Logic**: Automatic fallback to cached or custom bangs on failure
+### Error Handling
+- Graceful fallback to custom bangs if remote fetch fails
+- Ecosia‑specific early processing to ensure reliable redirects
 
 ## License
 
-This project is licensed under the MIT License. Feel free to modify and share!
-
-**Note**: This script enhances your search experience by providing custom bangs similar to DuckDuckGo's bang system, but it works across multiple search engines with additional AI service integration and dynamic bang loading capabilities.
+MIT
