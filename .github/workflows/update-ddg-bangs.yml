@@ -7,7 +7,7 @@ on:
   workflow_dispatch: # Allow manual triggering
   push:
     branches: [main, master]
-    paths: ['.github/workflows/update-bangs.yml'] # Run when this workflow is updated
+    paths: ['.github/workflows/update-ddg-bangs.yml'] # Run when this workflow is updated
 
 jobs:
   update-bangs:
@@ -24,19 +24,25 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Install dependencies
-        run: npm ci
+      - name: Validate current bang list
+        run: npm run validate-bangs
         
       - name: Update bang list
-        run: node scripts/update-bangs.js
+        run: node scripts-for-workflow/update-ddg-bangs.js
+        
+      - name: Validate updated bang list
+        run: npm run validate-bangs
         
       - name: Check for changes
         id: verify-changed-files
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Number of changes:"
+            git status --porcelain | wc -l
           else
             echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
           fi
           
       - name: Commit and push changes
@@ -52,4 +58,17 @@ jobs:
         if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
           npm run build
-          echo "Bang list updated and built successfully!" 
+          echo "Bang list updated and built successfully!"
+          
+      - name: Summary
+        run: |
+          echo "=== Workflow Summary ==="
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Changes detected: ${{ steps.verify-changed-files.outputs.changed }}"
+          if [ "${{ steps.verify-changed-files.outputs.changed }}" == "true" ]; then
+            echo "✅ Bang list updated successfully"
+          else
+            echo "ℹ️ No updates needed"
+          fi 
