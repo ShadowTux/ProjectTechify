@@ -20,7 +20,7 @@ This project automatically updates the DuckDuckGo bang list every month using Gi
 3. **API Fetch**: Fetches the latest bang list from `https://duckduckgo.com/bang.js`
 4. **Format Conversion**: Converts DuckDuckGo's format to our TypeScript format
 5. **Auto-commit**: Automatically commits and pushes changes if updates are found
-6. **Build Verification**: Runs build process to ensure everything works
+6. **Summary**: Provides a clear summary of what was accomplished
 
 ### Workflow Options
 
@@ -29,7 +29,7 @@ This project automatically updates the DuckDuckGo bang list every month using Gi
 - **Triggers**: Monthly schedule + when workflow file is updated
 - **Use case**: Works with your current setup, matches proven pattern
 
-#### Option 2: Simple Direct Push (`.github/workflows/update-ddg-bangs-simple.yml`)
+#### Option 2: Alternative Direct Push (`.github/workflows/update-ddg-bangs-simple.yml`)
 - Alternative workflow with same functionality
 - **Triggers**: Monthly schedule + when workflow file is updated
 - **Use case**: Backup option, same proven pattern
