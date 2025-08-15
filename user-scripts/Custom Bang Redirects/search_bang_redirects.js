@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Enhanced Search !Bang Redirects v2
 // @namespace    http://your.namespace.here
-// @version      2.2
-// @description  Redirects searches with custom bangs and DuckDuckGo bangs loaded from GitHub
+// @version      3.1
+// @description  Redirects searches with custom bangs and DuckDuckGo bangs queried on-demand
 // @match        *://*.google.com/*
 // @match        *://*.bing.com/*
 // @match        *://startpage.com/*
@@ -15,6 +15,9 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_xmlhttpRequest
+// @grant        GM.xmlHttpRequest
+// @grant        GM_xmlhttpRequest
+// @connect      duckduckgo.com
 // @run-at       document-start
 // @license      MIT
 // ==/UserScript==
@@ -44,440 +47,599 @@ THE SOFTWARE.
 */
 
 (function() {
-    'use strict';
+	'use strict';
 
-    // Configuration
-    const BANG_CACHE_KEY = 'cached_bangs_v2';
-    const BANG_CACHE_TIMESTAMP_KEY = 'cached_bangs_timestamp_v2';
-    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-    const GITHUB_BANG_URL = 'https://raw.githubusercontent.com/ShadowTux/ProjectTechify/refs/heads/main/src/bang.ts';
+	// Cross-browser compatibility layer
+	const GM = (typeof window.GM !== 'undefined') ? window.GM : {};
+	
+	// Unified API functions for Firefox/Chrome compatibility
+	function GM_setValue(key, value) {
+		if (typeof window.GM_setValue !== 'undefined') {
+			return window.GM_setValue(key, value);
+		} else if (typeof window.GM.setValue !== 'undefined') {
+			return window.GM.setValue(key, value);
+		} else {
+			console.warn('GM_setValue not available, using localStorage fallback');
+			try {
+				localStorage.setItem(key, JSON.stringify(value));
+				return true;
+			} catch (e) {
+				console.error('Failed to set value:', e);
+				return false;
+			}
+		}
+	}
+	
+	function GM_getValue(key, defaultValue) {
+		if (typeof window.GM_getValue !== 'undefined') {
+			return window.GM_getValue(key, defaultValue);
+		} else if (typeof window.GM.getValue !== 'undefined') {
+			return window.GM.getValue(key, defaultValue);
+		} else {
+			console.warn('GM_getValue not available, using localStorage fallback');
+			try {
+				const value = localStorage.getItem(key);
+				return value ? JSON.parse(value) : defaultValue;
+			} catch (e) {
+				console.error('Failed to get value:', e);
+				return defaultValue;
+			}
+		}
+	}
+	
+	function GM_xmlhttpRequest(options) {
+		if (typeof window.GM_xmlhttpRequest !== 'undefined') {
+			return window.GM_xmlhttpRequest(options);
+		} else if (typeof window.GM.xmlHttpRequest !== 'undefined') {
+			return window.GM.xmlHttpRequest(options);
+		} else {
+			console.warn('GM_xmlhttpRequest not available, using fetch fallback');
+			// Fallback to fetch API
+			const controller = new AbortController();
+			const timeoutId = setTimeout(() => controller.abort(), options.timeout || 15000);
+			
+			fetch(options.url, {
+				method: options.method || 'GET',
+				headers: options.headers || {},
+				signal: controller.signal
+			})
+			.then(response => {
+				clearTimeout(timeoutId);
+				// Handle response.text() as a Promise
+				return response.text().then(text => {
+					if (options.onload) {
+						options.onload({
+							status: response.status,
+							responseText: text,
+							statusText: response.statusText
+						});
+					}
+				});
+			})
+			.catch(error => {
+				clearTimeout(timeoutId);
+				if (options.onerror) {
+					options.onerror(error);
+				}
+			});
+		}
+	}
 
-    // Custom bangs that take priority over DuckDuckGo bangs
-    const CUSTOM_BANGS = {
-        // AI service bangs
-        '!chatgpt': {
-            url: 'https://chatgpt.com/?q={query}',
-            description: 'ChatGPT AI Assistant',
-            category: 'AI'
-        },
-        '!chat': {
-            url: 'https://chatgpt.com/?q={query}',
-            description: 'ChatGPT AI Assistant',
-            category: 'AI'
-        },
-        '!claude': {
-            url: 'https://claude.ai',
-            description: 'Claude AI Assistant',
-            category: 'AI'
-        },
-        '!summary': {
-            url: 'https://search.brave.com/search?q={query}&source=llmSuggest&summary=1',
-            description: 'Brave Search with AI Summary',
-            category: 'AI'
-        },
-        '!perp': {
-            url: 'https://www.perplexity.ai/search?q={query}',
-            description: 'Perplexity AI Search',
-            category: 'AI'
-        },
-        '!youai': {
-            url: 'https://you.com/search?q={query}&fromSearchBar=true&tbm=youchat&chatMode=default',
-            description: 'You.com AI Chat',
-            category: 'AI'
-        },
-        '!phind': {
-            url: 'https://www.phind.com/search?q={query}&searchMode=auto&allowMultiSearch=true',
-            description: 'Phind AI for Developers',
-            category: 'AI'
-        },
-        '!felo': {
-            url: 'https://felo.ai/search?q={query}',
-            description: 'Felo AI Search',
-            category: 'AI'
-        },
-        '!ecoai': {
-            url: 'https://www.ecosia.org/chat?q={query}',
-            description: 'Ecosia AI Chat',
-            category: 'AI'
-        },
-        '!mistral': {
-            url: 'https://chat.mistral.ai/chat?q={query}&mode=ai',
-            description: 'Mistral AI Chat',
-            category: 'AI'
-        },
-        '!mis': {
-            url: 'https://chat.mistral.ai/chat?q={query}&mode=ai',
-            description: 'Mistral AI Chat',
-            category: 'AI'
-        },
+	// Lightweight JSON fetch via GM (avoids CORS issues)
+	function fetchJsonViaGM(url) {
+		return new Promise((resolve, reject) => {
+			GM_xmlhttpRequest({
+				method: 'GET',
+				url,
+				headers: {
+					'Accept': 'application/json, text/javascript, */*; q=0.01'
+				},
+				onload: function(response) {
+					try {
+						const text = response.responseText;
+						const data = JSON.parse(text);
+						resolve(data);
+					} catch (e) {
+						reject(e);
+					}
+				},
+				onerror: function(err) { reject(err); },
+				ontimeout: function() { reject(new Error('GM request timeout')); },
+				timeout: 15000
+			});
+		});
+	}
 
-        // Search engine bangs
-        '!g': {
-            url: 'https://www.google.com/search?q={query}',
-            description: 'Google Search',
-            category: 'Search'
-        },
-        '!s': {
-            url: 'https://www.startpage.com/sp/search?query={query}',
-            description: 'Startpage Search',
-            category: 'Search'
-        },
-        '!sp': {
-            url: 'https://www.startpage.com/sp/search?query={query}',
-            description: 'Startpage Search',
-            category: 'Search'
-        },
-        '!yt': {
-            url: 'https://www.youtube.com/results?search_query={query}',
-            description: 'YouTube Search',
-            category: 'Multimedia'
-        },
-        '!w': {
-            url: 'https://en.wikipedia.org/wiki/Special:Search?search={query}',
-            description: 'Wikipedia Search',
-            category: 'Research'
-        },
-        '!nixpkgs': {
-            url: 'https://search.nixos.org/packages?query={query}',
-            description: 'NixOS Packages',
-            category: 'Tech'
-        },
-        '!ddg': {
-            url: 'https://duckduckgo.com/?q={query}',
-            description: 'DuckDuckGo Search',
-            category: 'Search'
-        },
-        '!qw': {
-            url: 'https://www.qwant.com/?q={query}&t=web',
-            description: 'Qwant Search',
-            category: 'Search'
-        },
-        '!qwant': {
-            url: 'https://www.qwant.com/?q={query}&t=web',
-            description: 'Qwant Search',
-            category: 'Search'
-        },
-        '!leta': {
-            url: 'https://leta.mullvad.net/search?q={query}&engine=brave',
-            description: 'Mullvad Leta Search',
-            category: 'Search'
-        },
+	// Configuration
+	const DDG_BANG_CACHE_KEY = 'ddg_bang_cache_v3';
+	const DDG_BANG_CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 
-        // Mojeek bangs
-        '!mj': {
-            url: 'https://www.mojeek.com/search?q={query}&theme=dark',
-            description: 'Mojeek Search',
-            category: 'Search'
-        },
-        '!mojeek': {
-            url: 'https://www.mojeek.com/search?q={query}&theme=dark',
-            description: 'Mojeek Search',
-            category: 'Search'
-        },
-        '!mjs': {
-            url: 'https://www.mojeek.com/search?q={query}&theme=dark&fmt=summary',
-            description: 'Mojeek Search with Summary',
-            category: 'Search'
-        },
-        '!sum': {
-            url: 'https://www.mojeek.com/search?q={query}&theme=dark&fmt=summary',
-            description: 'Mojeek Search with Summary',
-            category: 'Search'
-        }
-    };
+	// Custom bangs that take priority over DuckDuckGo bangs
+	const CUSTOM_BANGS = {
+		// AI service bangs
+		'!chatgpt': {
+			url: 'https://chatgpt.com/?q={query}',
+			description: 'ChatGPT AI Assistant',
+			category: 'AI'
+		},
+		'!chat': {
+			url: 'https://chatgpt.com/?q={query}',
+			description: 'ChatGPT AI Assistant',
+			category: 'AI'
+		},
+		'!claude': {
+			url: 'https://claude.ai',
+			description: 'Claude AI Assistant',
+			category: 'AI'
+		},
+		'!summary': {
+			url: 'https://search.brave.com/search?q={query}&source=llmSuggest&summary=1',
+			description: 'Brave Search with AI Summary',
+			category: 'AI'
+		},
+		'!perp': {
+			url: 'https://www.perplexity.ai/search?q={query}',
+			description: 'Perplexity AI Search',
+			category: 'AI'
+		},
+		'!youai': {
+			url: 'https://you.com/search?q={query}&fromSearchBar=true&tbm=youchat&chatMode=default',
+			description: 'You.com AI Chat',
+			category: 'AI'
+		},
+		'!phind': {
+			url: 'https://www.phind.com/search?q={query}&searchMode=auto&allowMultiSearch=true',
+			description: 'Phind AI for Developers',
+			category: 'AI'
+		},
+		'!felo': {
+			url: 'https://felo.ai/search?q={query}',
+			description: 'Felo AI Search',
+			category: 'AI'
+		},
+		'!ecoai': {
+			url: 'https://www.ecosia.org/chat?q={query}',
+			description: 'Ecosia AI Chat',
+			category: 'AI'
+		},
+		'!mistral': {
+			url: 'https://chat.mistral.ai/chat?q={query}&mode=ai',
+			description: 'Mistral AI Chat',
+			category: 'AI'
+		},
+		'!mis': {
+			url: 'https://chat.mistral.ai/chat?q={query}&mode=ai',
+			description: 'Mistral AI Chat',
+			category: 'AI'
+		},
 
-    // Global bangs storage
-    let allBangs = { ...CUSTOM_BANGS };
-    let isLoading = false;
-    let loadPromise = null;
+		// Search engine bangs
+		'!g': {
+			url: 'https://www.google.com/search?q={query}',
+			description: 'Google Search',
+			category: 'Search'
+		},
+		'!s': {
+			url: 'https://www.startpage.com/sp/search?query={query}',
+			description: 'Startpage Search',
+			category: 'Search'
+		},
+		'!sp': {
+			url: 'https://www.startpage.com/sp/search?query={query}',
+			description: 'Startpage Search',
+			category: 'Search'
+		},
+		'!yt': {
+			url: 'https://www.youtube.com/results?search_query={query}',
+			description: 'YouTube Search',
+			category: 'Multimedia'
+		},
+		'!w': {
+			url: 'https://en.wikipedia.org/wiki/Special:Search?search={query}',
+			description: 'Wikipedia Search',
+			category: 'Research'
+		},
+		'!nixpkgs': {
+			url: 'https://search.nixos.org/packages?query={query}',
+			description: 'NixOS Packages',
+			category: 'Tech'
+		},
+		'!ddg': {
+			url: 'https://duckduckgo.com/?q={query}',
+			description: 'DuckDuckGo Search',
+			category: 'Search'
+		},
+		'!qw': {
+			url: 'https://www.qwant.com/?q={query}&t=web',
+			description: 'Qwant Search',
+			category: 'Search'
+		},
+		'!qwant': {
+			url: 'https://www.qwant.com/?q={query}&t=web',
+			description: 'Qwant Search',
+			category: 'Search'
+		},
+		'!leta': {
+			url: 'https://leta.mullvad.net/search?q={query}&engine=brave',
+			description: 'Mullvad Leta Search',
+			category: 'Search'
+		},
 
-    // Function to extract URL parameters
-    function getUrlParameter(name) {
-        name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-        var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-        var results = regex.exec(location.search);
-        return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-    }
+		// Mojeek bangs
+		'!mj': {
+			url: 'https://www.mojeek.com/search?q={query}&theme=dark',
+			description: 'Mojeek Search',
+			category: 'Search'
+		},
+		'!mojeek': {
+			url: 'https://www.mojeek.com/search?q={query}&theme=dark',
+			description: 'Mojeek Search',
+			category: 'Search'
+		},
+		'!mjs': {
+			url: 'https://www.mojeek.com/search?q={query}&theme=dark&fmt=summary',
+			description: 'Mojeek Search with Summary',
+			category: 'Search'
+		},
+		'!sum': {
+			url: 'https://www.mojeek.com/search?q={query}&theme=dark&fmt=summary',
+			description: 'Mojeek Search with Summary',
+			category: 'Search'
+		}
+	};
 
-    // Helper function to perform a direct redirect
-    function performRedirect(url, query) {
-        const finalUrl = url.replace('{query}', encodeURIComponent(query));
+	// Global bangs storage
+	let allBangs = { ...CUSTOM_BANGS };
 
-        // For URLs that don't contain {query} placeholder, don't add extra parameters
-        let redirectUrl;
-        if (url.includes('{query}')) {
-            const separator = finalUrl.includes('?') ? '&' : '?';
-            redirectUrl = finalUrl + separator + 'bang_redirect=1&timestamp=' + Date.now();
-        } else {
-            // For simple redirects like Claude.ai, just use the URL as-is
-            redirectUrl = finalUrl;
-        }
+	// Function to extract URL parameters
+	function getUrlParameter(name) {
+		name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+		var regex = new RegExp('[\?&]' + name + '=([^&#]*)');
+		var results = regex.exec(location.search);
+		return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+	}
 
-        console.log("Redirecting to:", redirectUrl);
-        localStorage.setItem('lastRedirectTime', Date.now().toString());
-        window.location.replace(redirectUrl);
-    }
+	// Helper function to perform a direct redirect
+	function performRedirect(url, query) {
+		const finalUrl = url.replace('{query}', encodeURIComponent(query));
 
-    // Function to parse GitHub TypeScript bang data
-    function parseGitHubBangs(tsContent) {
-        const ddgBangs = {};
-        let count = 0;
+		// For URLs that don't contain {query} placeholder, don't add extra parameters
+		let redirectUrl;
+		if (url.includes('{query}')) {
+			const separator = finalUrl.includes('?') ? '&' : '?';
+			redirectUrl = finalUrl + separator + 'bang_redirect=1';
+		} else {
+			// For simple redirects like Claude.ai, just use the URL as-is
+			redirectUrl = finalUrl;
+		}
 
-        try {
-            // Extract the array content from the TypeScript file
-            const arrayMatch = tsContent.match(/export const bangs = \[([\s\S]*?)\];/);
+		console.log("Redirecting to:", redirectUrl);
+		window.location.replace(redirectUrl);
+	}
 
-            if (!arrayMatch) {
-                console.error("Could not find bangs array in TypeScript file");
-                return ddgBangs;
-            }
+	// Function to query DuckDuckGo for a specific bang
+	async function queryDuckDuckGoBang(bangTrigger) {
+		try {
+			// Remove the ! from the bang trigger
+			const bangName = bangTrigger.substring(1);
+			
+			// Check cache first
+			const cacheKey = `${DDG_BANG_CACHE_KEY}_${bangName}`;
+			const cachedBang = GM_getValue(cacheKey, null);
+			const cacheTimestamp = GM_getValue(`${cacheKey}_timestamp`, 0);
+			const now = Date.now();
+			
+			if (cachedBang && (now - cacheTimestamp) < DDG_BANG_CACHE_DURATION) {
+				console.log(`📦 Using cached DuckDuckGo bang: ${bangTrigger}`);
+				return cachedBang;
+			}
+			
+			console.log(`🔍 Querying DuckDuckGo bang.js for bang: ${bangTrigger}`);
+			
+			// Query DuckDuckGo's bang.js API (via GM to avoid CORS)
+			const data = await fetchJsonViaGM('https://duckduckgo.com/bang.js');
+			
+			if (data && data.length > 0) {
+				// Find the exact match by trigger
+				const exactMatch = data.find(item => item.t === bangName);
+				
+				if (exactMatch) {
+					console.log(`✅ Found DuckDuckGo bang: ${bangTrigger} -> ${exactMatch.s} (${exactMatch.c})`);
+					
+					const bangData = {
+						url: exactMatch.u,
+						description: exactMatch.s,
+						domain: exactMatch.d,
+						category: exactMatch.c || 'DuckDuckGo',
+						subcategory: exactMatch.sc || ''
+					};
+					
+					// Cache the result
+					GM_setValue(cacheKey, bangData);
+					GM_setValue(`${cacheKey}_timestamp`, now);
+					
+					return bangData;
+				}
+			}
+			
+			console.log(`❌ No DuckDuckGo bang found for: ${bangTrigger}`);
+			return null;
+			
+		} catch (error) {
+			console.error(`Error querying DuckDuckGo for bang ${bangTrigger}:`, error);
+			return null;
+		}
+	}
 
-            const arrayContent = arrayMatch[1];
+	// Function to test DuckDuckGo bang query
+	async function testDuckDuckGoBang(bangTrigger) {
+		console.log(`Testing DuckDuckGo bang query for: ${bangTrigger}`);
+		const result = await queryDuckDuckGoBang(bangTrigger);
+		if (result) {
+			console.log(`✅ Bang found:`, result);
+		} else {
+			console.log(`❌ Bang not found`);
+		}
+		return result;
+	}
+	
+	// Function to search through all available DuckDuckGo bangs
+	async function searchDuckDuckGoBangs(searchTerm) {
+		try {
+			console.log(`🔍 Searching DuckDuckGo bangs for: "${searchTerm}"`);
+			
+			const data = await fetchJsonViaGM('https://duckduckgo.com/bang.js');
+			
+			if (data && data.length > 0) {
+				// Search through all bangs for matches
+				const matches = data.filter(bang => 
+					bang.t.toLowerCase().includes(searchTerm.toLowerCase()) ||
+					bang.s.toLowerCase().includes(searchTerm.toLowerCase()) ||
+					bang.d.toLowerCase().includes(searchTerm.toLowerCase()) ||
+					(bang.c && bang.c.toLowerCase().includes(searchTerm.toLowerCase()))
+				);
+				
+				console.log(`Found ${matches.length} matching bangs for "${searchTerm}"`);
+				
+				// Show first 10 matches
+				const displayMatches = matches.slice(0, 10);
+				displayMatches.forEach((bang, index) => {
+					console.log(`${index + 1}. !${bang.t} -> ${bang.s} (${bang.d}) - ${bang.c}`);
+				});
+				
+				if (matches.length > 10) {
+					console.log(`... and ${matches.length - 10} more matches`);
+				}
+				
+				return matches;
+			}
+			
+			return [];
+			
+		} catch (error) {
+			console.error(`Error searching DuckDuckGo bangs:`, error);
+			return [];
+		}
+	}
 
-            // Split by object boundaries and parse each object
-            const objectMatches = arrayContent.match(/\{[^}]*\}/g);
+	// Function to process bangs
+	async function processBang(query) {
+		if (!query) return false;
 
-            if (!objectMatches) {
-                console.error("Could not parse bang objects");
-                return ddgBangs;
-            }
+		console.log(`Processing query for bangs: "${query}"`);
 
-            objectMatches.forEach(objStr => {
-                try {
-                    // Convert TypeScript object to JSON by adding quotes around keys
-                    const jsonStr = objStr
-                        .replace(/(\w+):/g, '"$1":')  // Quote unquoted keys
-                        .replace(/'/g, '"')           // Replace single quotes with double quotes
-                        .replace(/,\s*}/g, '}');      // Remove trailing commas
+		// Check for redirection loops - removed timestamp check
+		// Bang redirects are now handled by the bang_redirect parameter
 
-                    const bang = JSON.parse(jsonStr);
+		// Check if query contains bang_redirect parameter (prevents processing already redirected URLs)
+		if (query.includes('bang_redirect=1')) {
+			console.log("Skipping bang processing - already redirected");
+			return false;
+		}
 
-                    if (bang.t && bang.u) {
-                        const trigger = '!' + bang.t;
-                        // Don't override custom bangs
-                        if (!CUSTOM_BANGS[trigger]) {
-                            ddgBangs[trigger] = {
-                                url: bang.u.replace(/{{{s}}}/g, '{query}'),
-                                description: bang.s || '',
-                                domain: bang.d || '',
-                                category: 'DuckDuckGo'
-                            };
-                            count++;
-                        }
-                    }
-                } catch (e) {
-                    // Skip objects that can't be parsed
-                    console.debug("Failed to parse bang object:", objStr, e);
-                }
-            });
+		// First check custom bangs (they take priority)
+		const customBangsList = Object.keys(CUSTOM_BANGS).sort((a, b) => b.length - a.length);
+		
+		for (const bang of customBangsList) {
+			const bangIndex = query.indexOf(bang);
+			if (bangIndex !== -1) {
+				const afterBang = query.substring(bangIndex + bang.length);
+				
+				// Only process if there's a space after the bang or if it's at the end
+				if (afterBang === '' || afterBang.startsWith(' ')) {
+					const cleanQuery = query.replace(bang, '').trim();
 
-        } catch (e) {
-            console.error("Error parsing GitHub bang data:", e);
-        }
+					console.log(`Found custom bang: ${bang} -> ${CUSTOM_BANGS[bang].description}, query: "${cleanQuery}"`);
+					console.log(`Bang URL: ${CUSTOM_BANGS[bang].url}`);
 
-        console.log(`Parsed ${count} bangs from GitHub`);
-        return ddgBangs;
-    }
+					// Perform redirect
+					performRedirect(CUSTOM_BANGS[bang].url, cleanQuery);
+					return true;
+				}
+			}
+		}
 
-    // Function to load bangs from GitHub
-    function loadGitHubBangs() {
-        if (loadPromise) {
-            return loadPromise;
-        }
+		// If no custom bang found, check for DuckDuckGo bangs
+		// Extract potential bang from query (look for !bang pattern)
+		const bangMatch = query.match(/!(\w+)/);
+		if (bangMatch) {
+			const bangTrigger = '!' + bangMatch[1];
+			const afterBang = query.substring(bangMatch.index + bangTrigger.length);
+			
+			// Only process if there's a space after the bang or if it's at the end
+			if (afterBang === '' || afterBang.startsWith(' ')) {
+				const cleanQuery = query.replace(bangTrigger, '').trim();
+				
+				console.log(`Querying DuckDuckGo for bang: ${bangTrigger}`);
+				
+				// Query DuckDuckGo for this specific bang
+				const ddgBang = await queryDuckDuckGoBang(bangTrigger);
+				
+				if (ddgBang) {
+					console.log(`Found DuckDuckGo bang: ${bangTrigger} -> ${ddgBang.description}, query: "${cleanQuery}"`);
+					
+					// Convert DuckDuckGo URL format to our format
+					let redirectUrl = ddgBang.url;
+					if (redirectUrl.includes('{{{s}}}')) {
+						redirectUrl = redirectUrl.replace(/{{{s}}}/g, '{query}');
+					}
+					
+					// Perform redirect
+					performRedirect(redirectUrl, cleanQuery);
+					return true;
+				} else {
+					console.log(`No DuckDuckGo bang found for: ${bangTrigger}`);
+				}
+			}
+		}
 
-        loadPromise = new Promise((resolve, reject) => {
-            // Check if we have cached bangs that are still valid
-            const cachedBangs = GM_getValue(BANG_CACHE_KEY, null);
-            const cacheTimestamp = GM_getValue(BANG_CACHE_TIMESTAMP_KEY, 0);
-            const now = Date.now();
+		console.log("No matching bang found");
+		return false;
+	}
 
-            if (cachedBangs && (now - cacheTimestamp) < CACHE_DURATION) {
-                console.log("Loading bangs from cache");
-                try {
-                    const parsed = JSON.parse(cachedBangs);
-                    // Merge with custom bangs, giving priority to custom bangs
-                    allBangs = { ...parsed, ...CUSTOM_BANGS };
-                    console.log(`Loaded ${Object.keys(parsed).length} cached GitHub bangs and ${Object.keys(CUSTOM_BANGS).length} custom bangs`);
-                    resolve(allBangs);
-                    return;
-                } catch (e) {
-                    console.error("Error parsing cached bangs:", e);
-                }
-            }
+	// Main execution function
+	async function main() {
+		// Extract the search query from various search engines
+		const query = getUrlParameter('q') ||
+					 getUrlParameter('query') ||
+					 getUrlParameter('search_query');
 
-            // Fetch fresh bangs from GitHub
-            console.log("Fetching fresh bangs from GitHub...");
-            isLoading = true;
+		if (!query) return;
 
-            GM_xmlhttpRequest({
-                method: 'GET',
-                url: GITHUB_BANG_URL,
-                headers: {
-                    'User-Agent': 'Enhanced-Search-Bang-Redirects/2.1',
-                    'Accept': 'text/plain, text/typescript, */*'
-                },
-                onload: function(response) {
-                    isLoading = false;
-                    try {
-                        if (response.status === 200) {
-                            const tsContent = response.responseText;
-                            console.log("Successfully fetched GitHub bang data");
+		console.log(`Processing query: "${query}"`);
 
-                            const githubBangs = parseGitHubBangs(tsContent);
+		// Special case for Ecosia shopping search
+		const isEcosia = window.location.hostname.includes('ecosia.org');
+		const isShoppingSearch = window.location.pathname.includes('/shopping');
 
-                            if (Object.keys(githubBangs).length > 0) {
-                                // Cache the GitHub bangs
-                                GM_setValue(BANG_CACHE_KEY, JSON.stringify(githubBangs));
-                                GM_setValue(BANG_CACHE_TIMESTAMP_KEY, now);
+		if (isEcosia) {
+			console.log(`🌱 Ecosia detected - hostname: ${window.location.hostname}, path: ${window.location.pathname}`);
+			console.log(`🌱 Query: "${query}"`);
+			
+			if (isShoppingSearch && query) {
+				console.log("🌱 Redirecting Ecosia shopping search to Startpage");
+				window.location.replace('https://www.startpage.com/sp/search?query=' + encodeURIComponent(query) + '&bang_redirect=1');
+				return;
+			}
+			
+			// For Ecosia, process bangs immediately to prevent search execution
+			console.log("🌱 Processing bang on Ecosia immediately");
+			if (await processBang(query)) {
+				return; // Bang was processed, don't continue
+			}
+		}
 
-                                // Merge with custom bangs
-                                allBangs = { ...githubBangs, ...CUSTOM_BANGS };
+		// Process the bang
+		await processBang(query);
+	}
 
-                                console.log(`Successfully loaded ${Object.keys(githubBangs).length} GitHub bangs and ${Object.keys(CUSTOM_BANGS).length} custom bangs`);
-                                resolve(allBangs);
-                            } else {
-                                console.warn("No bangs parsed from GitHub data, using custom bangs only");
-                                allBangs = CUSTOM_BANGS;
-                                resolve(allBangs);
-                            }
-                        } else {
-                            console.error("Failed to fetch GitHub bangs, status:", response.status);
-                            allBangs = CUSTOM_BANGS;
-                            resolve(allBangs);
-                        }
-                    } catch (e) {
-                        console.error("Error processing GitHub bangs:", e);
-                        allBangs = CUSTOM_BANGS;
-                        resolve(allBangs);
-                    }
-                },
-                onerror: function(error) {
-                    isLoading = false;
-                    console.error("Error fetching GitHub bangs:", error);
-                    allBangs = CUSTOM_BANGS;
-                    resolve(allBangs);
-                },
-                ontimeout: function() {
-                    isLoading = false;
-                    console.warn("Timeout fetching GitHub bangs, using custom bangs only");
-                    allBangs = CUSTOM_BANGS;
-                    resolve(allBangs);
-                },
-                timeout: 15000 // 15 second timeout
-            });
-        });
+	// Debug function to show loaded bangs
+	function showLoadedBangs() {
+		const customCount = Object.keys(CUSTOM_BANGS).length;
 
-        return loadPromise;
-    }
+		console.log(`🔥 Enhanced Search Bang Redirects v3.1 Status:`);
+		console.log(`   Custom bangs: ${customCount}`);
+		console.log(`   DuckDuckGo bangs: Queried on-demand with caching`);
+		console.log(`   Cache duration: ${DDG_BANG_CACHE_DURATION / (24 * 60 * 60 * 1000)} days`);
 
-    // Function to process bangs
-    function processBang(query) {
-        if (!query) return false;
+		// Show some example custom bangs
+		const exampleBangs = Object.keys(CUSTOM_BANGS).slice(0, 10);
+		console.log(`   Example custom bangs: ${exampleBangs.join(', ')}`);
+		console.log(`   Try: testDuckDuckGoBang('!a2') to test DuckDuckGo bang query`);
+		console.log(`   Try: searchDuckDuckGoBangs('alternative') to search for bangs`);
+	}
 
-        console.log(`Processing query for bangs: "${query}"`);
+	// Make debug function available globally
+	window.showBangs = showLoadedBangs;
+	
+	// Test function to check DuckDuckGo bang query
+	window.testDuckDuckGoBang = testDuckDuckGoBang;
+	
+	// Function to search through all DuckDuckGo bangs
+	window.searchDuckDuckGoBangs = searchDuckDuckGoBangs;
+	
+	// Function to clear DuckDuckGo bang cache
+	window.clearDuckDuckGoCache = function() {
+		console.log("🗑️ Clearing DuckDuckGo bang cache...");
+		
+		// Get all GM keys and clear DDG bang cache keys
+		const allKeys = [];
+		for (let i = 0; i < localStorage.length; i++) {
+			const key = localStorage.key(i);
+			if (key && key.startsWith(DDG_BANG_CACHE_KEY)) {
+				allKeys.push(key);
+			}
+		}
+		
+		// Clear each cache key
+		allKeys.forEach(key => {
+			GM_setValue(key, null);
+			console.log(`Cleared cache key: ${key}`);
+		});
+		
+		console.log("🔄 DuckDuckGo bang cache cleared!");
+		console.log("Next bang queries will fetch fresh data from DuckDuckGo");
+	};
+	
+	// Test function to check specific bangs
+	window.testBang = function(bangName) {
+		console.log(`Testing bang: ${bangName}`);
+		
+		// Check custom bangs first
+		if (CUSTOM_BANGS[bangName]) {
+			console.log(`✅ Custom bang found: ${bangName}`);
+			console.log(`   URL: ${CUSTOM_BANGS[bangName].url}`);
+			console.log(`   Description: ${CUSTOM_BANGS[bangName].description}`);
+			console.log(`   Category: ${CUSTOM_BANGS[bangName].category}`);
+			return;
+		}
+		
+		// Check if it's a DuckDuckGo bang
+		if (bangName.startsWith('!')) {
+			console.log(`🔍 Testing DuckDuckGo bang: ${bangName}`);
+			console.log(`Use testDuckDuckGoBang('${bangName}') to query DuckDuckGo directly`);
+		} else {
+			console.log(`❌ Bang not found: ${bangName}`);
+			console.log(`Available custom bangs starting with ${bangName.substring(0, 3)}:`);
+			const similarBangs = Object.keys(CUSTOM_BANGS).filter(b => b.startsWith(bangName.substring(0, 3)));
+			console.log(similarBangs.slice(0, 10));
+		}
+	};
 
-        // Check for redirection loops
-        const wasRedirectedRecently = (Date.now() - (parseInt(localStorage.getItem('lastRedirectTime') || 0)) < 2000);
-        if (wasRedirectedRecently) {
-            console.log("Skipping redirect to prevent loop");
-            return false;
-        }
+	// Initialize and run
+	(async function init() {
+		try {
+			console.log("🚀 Initializing Enhanced Search Bang Redirects v3.1...");
+			
+			// Browser detection
+			const userAgent = navigator.userAgent;
+			const isFirefox = userAgent.includes('Firefox');
+			const isChrome = userAgent.includes('Chrome') && !userAgent.includes('Edg');
+			console.log(`🌐 Browser detected: ${isFirefox ? 'Firefox' : isChrome ? 'Chrome' : 'Other'}`);
+			
+			// Check GM API availability
+			console.log(`🔧 GM API Status:`, {
+				GM_setValue: typeof GM_setValue !== 'undefined',
+				GM_getValue: typeof GM_getValue !== 'undefined',
+				GM_xmlhttpRequest: typeof GM_xmlhttpRequest !== 'undefined'
+			});
 
-        // Check if query contains bang_redirect parameter (prevents processing already redirected URLs)
-        if (query.includes('bang_redirect=1')) {
-            console.log("Skipping bang processing - already redirected");
-            return false;
-        }
+			// Initialize with custom bangs only
+			allBangs = CUSTOM_BANGS;
 
-        // Sort bangs by length (longest first) to handle overlapping bangs correctly
-        const bangsList = Object.keys(allBangs).sort((a, b) => b.length - a.length);
+			// Process current page immediately
+			await main();
 
-        // Find the first matching bang
-        for (const bang of bangsList) {
-            if (query.includes(bang)) {
-                const cleanQuery = query.replace(bang, '').trim();
+			showLoadedBangs();
+			console.log("✅ Bang system ready! Type 'showBangs()' in console for status.");
+			console.log("🔍 DuckDuckGo bangs are queried from bang.js API and cached for 7 days");
 
-                console.log(`Found bang: ${bang} -> ${allBangs[bang].description}, query: "${cleanQuery}"`);
-                console.log(`Bang URL: ${allBangs[bang].url}`);
-
-                // Perform redirect
-                performRedirect(allBangs[bang].url, cleanQuery);
-                return true;
-            }
-        }
-
-        console.log("No matching bang found");
-        return false;
-    }
-
-    // Main execution function
-    function main() {
-        // Extract the search query from various search engines
-        const query = getUrlParameter('q') ||
-                     getUrlParameter('query') ||
-                     getUrlParameter('search_query');
-
-        if (!query) return;
-
-        console.log(`Processing query: "${query}"`);
-
-        // Special case for Ecosia shopping search
-        const isEcosia = window.location.hostname.includes('ecosia.org');
-        const isShoppingSearch = window.location.pathname.includes('/shopping');
-
-        if (isEcosia && isShoppingSearch && query) {
-            localStorage.setItem('lastRedirectTime', Date.now().toString());
-            window.location.replace('https://www.startpage.com/sp/search?query=' + encodeURIComponent(query) + '&bang_redirect=1');
-            return;
-        }
-
-        // Process the bang
-        processBang(query);
-    }
-
-    // Debug function to show loaded bangs
-    function showLoadedBangs() {
-        const customCount = Object.keys(CUSTOM_BANGS).length;
-        const totalCount = Object.keys(allBangs).length;
-        const githubCount = totalCount - customCount;
-
-        console.log(`🔥 Enhanced Search Bang Redirects v2.1 Status:`);
-        console.log(`   Custom bangs: ${customCount}`);
-        console.log(`   GitHub bangs: ${githubCount}`);
-        console.log(`   Total bangs: ${totalCount}`);
-        console.log(`   Is loading: ${isLoading}`);
-
-        // Show some example bangs
-        const exampleBangs = Object.keys(allBangs).slice(0, 10);
-        console.log(`   Example bangs: ${exampleBangs.join(', ')}`);
-    }
-
-    // Make debug function available globally
-    window.showBangs = showLoadedBangs;
-
-    // Initialize and run
-    (async function init() {
-        try {
-            console.log("🚀 Initializing Enhanced Search Bang Redirects v2.1...");
-
-            // Start loading bangs in background
-            const bangLoadPromise = loadGitHubBangs();
-
-            // Process current page immediately with whatever bangs we have
-            main();
-
-            // Wait for bang loading to complete for future use
-            await bangLoadPromise;
-
-            showLoadedBangs();
-            console.log("✅ Bang system ready! Type 'showBangs()' in console for status.");
-
-        } catch (error) {
-            console.error("❌ Error initializing bang redirects:", error);
-            // Ensure we always have at least custom bangs
-            allBangs = CUSTOM_BANGS;
-            main();
-        }
-    })();
+		} catch (error) {
+			console.error("❌ Error initializing bang redirects:", error);
+			// Ensure we always have at least custom bangs
+			allBangs = CUSTOM_BANGS;
+			await main();
+		}
+	})();
 
 })();
