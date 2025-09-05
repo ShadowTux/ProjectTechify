@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Enhanced Search !Bang Redirects v2
 // @namespace    http://your.namespace.here
-// @version      3.1
+// @version      3.2
 // @description  Redirects searches with custom bangs and DuckDuckGo bangs queried on-demand
 // @match        *://*.google.com/*
 // @match        *://*.bing.com/*
@@ -172,6 +172,16 @@ THE SOFTWARE.
 			description: 'Claude AI Assistant',
 			category: 'AI'
 		},
+		'!t3': {
+			url: 'https://t3.chat/',
+			description: 'T3 Chat AI Assistant',
+			category: 'AI'
+		},
+		'!t3chat': {
+			url: 'https://t3.chat/',
+			description: 'T3 Chat AI Assistant',
+			category: 'AI'
+		},
 		'!summary': {
 			url: 'https://search.brave.com/search?q={query}&source=llmSuggest&summary=1',
 			description: 'Brave Search with AI Summary',
@@ -334,7 +344,7 @@ THE SOFTWARE.
 				return cachedBang;
 			}
 			
-			console.log(`🔍 Querying DuckDuckGo bang.js for bang: ${bangTrigger}`);
+			console.log(`🔍 Querying DuckDuckGo bang.js for bang: ${bangName}`);
 			
 			// Query DuckDuckGo's bang.js API (via GM to avoid CORS)
 			const data = await fetchJsonViaGM('https://duckduckgo.com/bang.js');
