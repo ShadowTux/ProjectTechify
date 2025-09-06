@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Enhanced Search !Bang Redirects v2
 // @namespace    http://your.namespace.here
-// @version      3.3
+// @version      3.5
 // @description  Redirects searches with custom bangs and DuckDuckGo bangs queried on-demand
 // @match        *://*.google.com/*
 // @match        *://*.bing.com/*
@@ -173,12 +173,12 @@ THE SOFTWARE.
 			category: 'AI'
 		},
 		'!t3': {
-			url: 'https://t3.chat/',
+			url: 'https://t3.chat',
 			description: 'T3 Chat AI Assistant',
 			category: 'AI'
 		},
 		'!t3chat': {
-			url: 'https://t3.chat/',
+			url: 'https://t3.chat',
 			description: 'T3 Chat AI Assistant',
 			category: 'AI'
 		},
@@ -344,7 +344,7 @@ THE SOFTWARE.
 				return cachedBang;
 			}
 			
-			console.log(`🔍 Querying DuckDuckGo bang.js for bang: ${bangName}`);
+			console.log(`🔍 Querying DuckDuckGo bang.js for bang: ${bangTrigger}`);
 			
 			// Query DuckDuckGo's bang.js API (via GM to avoid CORS)
 			const data = await fetchJsonViaGM('https://duckduckgo.com/bang.js');
@@ -450,26 +450,18 @@ THE SOFTWARE.
 		// First check custom bangs (they take priority)
 		const customBangsList = Object.keys(CUSTOM_BANGS).sort((a, b) => b.length - a.length);
 		
-		// Make matching case-insensitive and tolerate punctuation/whitespace boundaries
-		const lowerQuery = query.toLowerCase();
-		
 		for (const bang of customBangsList) {
-			const lowerBang = bang.toLowerCase();
-			const bangIndex = lowerQuery.indexOf(lowerBang);
+			const bangIndex = query.indexOf(bang);
 			if (bangIndex !== -1) {
-				const afterIndex = bangIndex + lowerBang.length;
-				const charAfter = lowerQuery.charAt(afterIndex) || '';
-				const charBefore = lowerQuery.charAt(bangIndex - 1) || '';
-				const isBeforeBoundary = bangIndex === 0 || /\s/.test(charBefore);
-				const isAfterBoundary = charAfter === '' || /[\s\.,;:!\?\/]$/.test(charAfter);
+				const afterBang = query.substring(bangIndex + bang.length);
 				
-				if (isBeforeBoundary && isAfterBoundary) {
-					// Remove the matched bang using original casing via slicing
-					const cleanQuery = (query.substring(0, bangIndex) + query.substring(afterIndex)).trim();
-					
+				// Only process if there's a space after the bang or if it's at the end
+				if (afterBang === '' || afterBang.startsWith(' ')) {
+					const cleanQuery = query.replace(bang, '').trim();
+
 					console.log(`Found custom bang: ${bang} -> ${CUSTOM_BANGS[bang].description}, query: "${cleanQuery}"`);
 					console.log(`Bang URL: ${CUSTOM_BANGS[bang].url}`);
-					
+
 					// Perform redirect
 					performRedirect(CUSTOM_BANGS[bang].url, cleanQuery);
 					return true;
