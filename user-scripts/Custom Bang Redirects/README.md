@@ -1,4 +1,4 @@
-# **Enhanced Search !Bang Redirects v3.1**
+# **Enhanced Search !Bang Redirects v3.2**
 
 The Enhanced Search !Bang Redirects userscript improves your search experience by introducing custom bang commands and live DuckDuckGo bang lookups. It works across multiple search engines, including Google, Bing, Startpage, Brave, Ecosia, DuckDuckGo, Qwant, Mullvad Leta, and Mojeek.
 
@@ -7,6 +7,7 @@ The Enhanced Search !Bang Redirects userscript improves your search experience b
 ### AI Service Bangs
 - `!chatgpt` or `!chat`: Redirects to ChatGPT with the query
 - `!claude`: Redirects to Claude.ai (main site)
+- `!t3` or `!t3chat`: Redirects to T3 Chat AI Assistant
 - `!summary`: Redirects to Brave Search with AI summary
 - `!perp`: Redirects to Perplexity.ai
 - `!youai`: Redirects to You.com's AI chat
@@ -27,7 +28,7 @@ The Enhanced Search !Bang Redirects userscript improves your search experience b
 - `!mj` or `!mojeek`: Mojeek
 - `!mjs` or `!sum`: Mojeek with summary
 
-## What’s new in v3.1
+## What's new in v3.2
 
 ### On‑Demand DuckDuckGo Bangs (bang.js)
 - Uses the official `https://duckduckgo.com/bang.js` endpoint at runtime
@@ -73,6 +74,7 @@ Type a bang followed by a space and your query on any supported engine:
 ```
 !a2 alternative to photoshop
 !chatgpt how to install Linux
+!t3 what is artificial intelligence
 !yt learn JavaScript tutorial
 !w artificial intelligence
 !g weather forecast
