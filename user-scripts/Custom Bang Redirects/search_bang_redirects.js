@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Enhanced Search !Bang Redirects v2
 // @namespace    http://your.namespace.here
-// @version      3.2
+// @version      3.3
 // @description  Redirects searches with custom bangs and DuckDuckGo bangs queried on-demand
 // @match        *://*.google.com/*
 // @match        *://*.bing.com/*
@@ -450,18 +450,26 @@ THE SOFTWARE.
 		// First check custom bangs (they take priority)
 		const customBangsList = Object.keys(CUSTOM_BANGS).sort((a, b) => b.length - a.length);
 		
+		// Make matching case-insensitive and tolerate punctuation/whitespace boundaries
+		const lowerQuery = query.toLowerCase();
+		
 		for (const bang of customBangsList) {
-			const bangIndex = query.indexOf(bang);
+			const lowerBang = bang.toLowerCase();
+			const bangIndex = lowerQuery.indexOf(lowerBang);
 			if (bangIndex !== -1) {
-				const afterBang = query.substring(bangIndex + bang.length);
+				const afterIndex = bangIndex + lowerBang.length;
+				const charAfter = lowerQuery.charAt(afterIndex) || '';
+				const charBefore = lowerQuery.charAt(bangIndex - 1) || '';
+				const isBeforeBoundary = bangIndex === 0 || /\s/.test(charBefore);
+				const isAfterBoundary = charAfter === '' || /[\s\.,;:!\?\/]$/.test(charAfter);
 				
-				// Only process if there's a space after the bang or if it's at the end
-				if (afterBang === '' || afterBang.startsWith(' ')) {
-					const cleanQuery = query.replace(bang, '').trim();
-
+				if (isBeforeBoundary && isAfterBoundary) {
+					// Remove the matched bang using original casing via slicing
+					const cleanQuery = (query.substring(0, bangIndex) + query.substring(afterIndex)).trim();
+					
 					console.log(`Found custom bang: ${bang} -> ${CUSTOM_BANGS[bang].description}, query: "${cleanQuery}"`);
 					console.log(`Bang URL: ${CUSTOM_BANGS[bang].url}`);
-
+					
 					// Perform redirect
 					performRedirect(CUSTOM_BANGS[bang].url, cleanQuery);
 					return true;
