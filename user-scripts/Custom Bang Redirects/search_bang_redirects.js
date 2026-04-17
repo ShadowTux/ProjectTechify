@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Enhanced Search !Bang Redirects v2
 // @namespace    http://your.namespace.here
-// @version      3.5
+// @version      3.6
 // @description  Redirects searches with custom bangs and DuckDuckGo bangs queried on-demand
 // @match        *://*.google.com/*
 // @match        *://*.bing.com/*
@@ -20,6 +20,8 @@
 // @connect      duckduckgo.com
 // @run-at       document-start
 // @license      MIT
+// @updateURL    https://raw.githubusercontent.com/ShadowTux/ProjectTechify/main/user-scripts/Custom%20Bang%20Redirects/search_bang_redirects.js
+// @downloadURL  https://raw.githubusercontent.com/ShadowTux/ProjectTechify/main/user-scripts/Custom%20Bang%20Redirects/search_bang_redirects.js
 // ==/UserScript==
 
 /*

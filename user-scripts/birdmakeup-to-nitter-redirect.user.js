@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         Bird.Makeup to Nitter redirector
 // @namespace    http://tampermonkey
-// @version      1
+// @version      1.1
 // @description  Redirects links from bird.makeup to nitter
 // @match        https://bird.makeup/*
 // @author       shadowtux
 // @grant        none
+// @updateURL    https://raw.githubusercontent.com/ShadowTux/ProjectTechify/main/user-scripts/birdmakeup-to-nitter-redirect.user.js
+// @downloadURL  https://raw.githubusercontent.com/ShadowTux/ProjectTechify/main/user-scripts/birdmakeup-to-nitter-redirect.user.js
 // ==/UserScript==
 
 (function() {

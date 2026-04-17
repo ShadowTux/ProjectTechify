@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Mastodon Language Filter (FI + EN + SV)
 // @namespace    https://example.com/
-// @version      1.3
+// @version      1.4
 // @description  Hide posts unless their language is Finnish or English on home and tag timelines
 // @match        https://infosec.exchange/home*
 // @match        https://infosec.exchange/web/home*
@@ -65,6 +65,8 @@
 
 // @grant        none
 // @run-at       document-idle
+// @updateURL    https://raw.githubusercontent.com/ShadowTux/ProjectTechify/main/user-scripts/mastodon-language-filter.js
+// @downloadURL  https://raw.githubusercontent.com/ShadowTux/ProjectTechify/main/user-scripts/mastodon-language-filter.js
 // ==/UserScript==
 
 /*

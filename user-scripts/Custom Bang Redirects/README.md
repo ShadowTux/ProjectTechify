@@ -63,9 +63,10 @@ The Enhanced Search !Bang Redirects userscript improves your search experience b
 
 1. Install a Userscript Manager:
    - Tampermonkey / Violentmonkey / Greasemonkey
-2. Add the userscript:
-   - Create a new userscript and paste the contents of `search_bang_redirects.js`
-   - Save and enable
+2. One-click install from GitHub:
+   - Click `search_bang_redirects.js` above, then click **Raw**.
+   - Your userscript manager will detect it and prompt you to install.
+   - The script includes `@updateURL` / `@downloadURL` metadata for automatic updates from GitHub.
 
 ## Usage
 

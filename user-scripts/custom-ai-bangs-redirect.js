@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Custom AI !Bang Redirects
 // @namespace    http://your.namespace.here
-// @version      1.9
+// @version      2.0
 // @description  Redirects DuckDuckGo searches with custom bangs to specified services
 // @match        *://*.google.com/*
 // @match        *://*.bing.com/*
@@ -12,6 +12,8 @@
 // @grant        none
 // @run-at       document-start
 // @license MIT
+// @updateURL    https://raw.githubusercontent.com/ShadowTux/ProjectTechify/main/user-scripts/custom-ai-bangs-redirect.js
+// @downloadURL  https://raw.githubusercontent.com/ShadowTux/ProjectTechify/main/user-scripts/custom-ai-bangs-redirect.js
 // ==/UserScript==
 
 /*

@@ -1,5 +1,7 @@
 For use of tamper monkey or similar program.
 
+Scripts can be installed directly from GitHub — no Greasyfork or other platform needed.
+
 ---
 
 **Mastodon Language Filter**
@@ -20,10 +22,12 @@ The **Mastodon Language Filter** userscript hides posts on Mastodon home and tag
    - [Greasemonkey](https://www.greasespot.net/) for Firefox.
    - [Violentmonkey](https://violentmonkey.github.io/) for Chrome, Firefox, and Edge.
 
-2. **Add the Userscript:**
-   - Create a new userscript in your manager.
-   - Copy and paste the script code into the editor.
-   - Save and enable the script.
+2. **One-click install from GitHub:**
+   - Click the script file above, then click **Raw**.
+   - Your userscript manager will detect it and prompt you to install.
+   - Alternatively, paste the raw URL directly into your manager's install dialog.
+
+   Scripts also include `@updateURL` and `@downloadURL` metadata, so your manager can check for and apply updates automatically.
 
 **Usage**
 
@@ -68,10 +72,10 @@ The **Custom AI !Bang Redirects** userscript enhances your search experience by 
    - [Greasemonkey](https://www.greasespot.net/) for Firefox.
    - [Violentmonkey](https://violentmonkey.github.io/) for Chrome, Firefox, and Edge.
 
-2. **Add the Userscript:**
-   - Create a new userscript in your manager.
-   - Copy and paste the script code into the editor.
-   - Save and enable the script.
+2. **One-click install from GitHub:**
+   - Click the script file, then click **Raw**.
+   - Your userscript manager will detect it and prompt you to install.
+   - The script's `@updateURL` / `@downloadURL` metadata means your manager can auto-update it from GitHub.
 
 **Usage**
 
