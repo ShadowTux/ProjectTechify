@@ -1,5 +1,48 @@
 For use of tamper monkey or similar program.
 
+---
+
+**Mastodon Language Filter**
+
+The **Mastodon Language Filter** userscript hides posts on Mastodon home and tag timelines whose language is not in your allowed list (Finnish, English, and Swedish by default). It works across a wide range of popular Mastodon instances and uses a MutationObserver to handle dynamically loaded posts.
+
+**Features**
+
+- Filters posts on `/home` and `/tags/*` timelines by detected language
+- Configurable allowed language list (default: `fi`, `en`, `sv`)
+- Automatically handles new posts loaded dynamically as you scroll
+- Works across many Mastodon instances (infosec.exchange, mastodon.social, fosstodon.org, hachyderm.io, and more)
+
+**Installation**
+
+1. **Install a Userscript Manager:**
+   - [Tampermonkey](https://www.tampermonkey.net/) for Chrome, Firefox, Safari, and Edge.
+   - [Greasemonkey](https://www.greasespot.net/) for Firefox.
+   - [Violentmonkey](https://violentmonkey.github.io/) for Chrome, Firefox, and Edge.
+
+2. **Add the Userscript:**
+   - Create a new userscript in your manager.
+   - Copy and paste the script code into the editor.
+   - Save and enable the script.
+
+**Usage**
+
+Navigate to the home or a tag timeline on any supported Mastodon instance. Posts in languages other than those in the allowed list will be hidden automatically.
+
+To customise the allowed languages, edit this line near the top of the script:
+
+```js
+const ALLOWED = new Set(['fi', 'en', 'sv']);
+```
+
+Replace or extend the list with any language codes from [fedi.tips/language-codes-used-by-mastodon](https://fedi.tips/language-codes-used-by-mastodon/).
+
+**License**
+
+This project is licensed under the MIT License. Feel free to modify and share!
+
+---
+
 Also from twitter-to-nitter script https://raw.githubusercontent.com/shmup/redirect-userscripts/main/twitter-nitter.js
 
 **Custom AI !Bang Redirects**
