@@ -2,7 +2,9 @@
 // @name         Sanoma cookie banner bypass (no consent)
 // @namespace    local.sanoma.cmp-bypass
 // @version      1.1.0
-// @description  Hides the Sourcepoint consent prompt on Sanoma news sites (is.fi, hs.fi, aamulehti.fi, satakunnankansa.fi, taloussanomat.fi) without granting consent or breaking the sites. No consent choice is ever recorded.
+// @description  Hides the Sourcepoint consent prompt on Sanoma news sites (is.fi, hs.fi, aamulehti.fi, satakunnankansa.fi, taloussanomat.fi) without granting consent or breaking the sites. No consent is given and tracking remains disabled.
+// @updateURL    https://github.com/ShadowTux/ProjectTechify/raw/refs/heads/main/user-scripts/sanoma-cookie-banner-bypass.user.js
+// @downloadURL  https://github.com/ShadowTux/ProjectTechify/raw/refs/heads/main/user-scripts/sanoma-cookie-banner-bypass.user.js
 // @match        https://www.is.fi/*
 // @match        https://is.fi/*
 // @match        https://www.hs.fi/*
